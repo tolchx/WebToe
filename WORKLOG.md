@@ -15,6 +15,13 @@ Append-only build log. Protocol: every work chunk gets an entry — timestamp, w
 - Workspace scaffold + CI (typecheck + tests + build + Pages deploy), zero runtime deps.
 - Repo created at github.com/frank890417/WebToe and pushed.
 
+## 2026-06-11 — M1 core + CHOP family
+
+- `packages/core`: types, NodeInst, Graph (TD-style unique naming `noise1/noise2`, hierarchy, path resolution incl. `../` and absolute), Engine (pull cook, per-frame memo, cycle guard, bypass), expression system (`new Function` against fixed scope: time/me/op()/math whitelist + TD-Python translation with dry-run validation), backend-agnostic pass contract (`passes.ts`, GpuFacade), versioned serialize with migrations + family-aware stub fallback for unknown types.
+- `packages/ops`: CHOP family (constant, lfo w/ integrated phase, noise fBm, math, lag, merge, select w/ wildcards, mousein) on the wasm-ready `Kernels` seam; comp:container, dat:text, per-family stubs. Registry keys namespaced `family:name`.
+- Evidence: `npm run check` green — 23/23 tests (graph structure/wiring/paths, expr eval + TD translation accept/refuse cases, engine cooking incl. expr-driven params, cycle guard, lag convergence, serialize round-trip + stub fallback + version guard).
+- Fix found by tests: cycle-guard error was wiped by post-input `error=null` reset — moved reset to cook start.
+
 ## NEXT
 
-M1 — implement `packages/core` (types, node, graph, engine, expr incl. TD translation, registry, passes contract, serialize+migrations) + `packages/ops` chop family with vitest coverage per PLAN §6–§7; `npm run check` must pass.
+M2 — `packages/gpu` (GpuFacade impl: WebGL2 full + WebGPU detect/skeleton with pilot ops) + `packages/ops` TOP family per PLAN §7 (GLSL originals); wire a minimal boot in apps/web that renders 01-hello-noise headful; screenshot evidence; then commit M2.

@@ -1,2 +1,18 @@
-// M1: chop ops + kernels. M2: top ops with per-backend shaders. Registered via @webtoe/core registry.
-export {};
+import { registerOp, hasOp, type OpSpec } from '@webtoe/core';
+import { chopOps } from './chop/ops';
+import { commonOps } from './common/ops';
+
+export { channels, channel, sample, asChop, CONTROL_RATE } from './chop/data';
+export { kernels, setKernels, tsKernels, type Kernels, type LfoShape } from './chop/kernels';
+export { chopOps } from './chop/ops';
+export { commonOps } from './common/ops';
+
+function registerAll(specs: OpSpec[]): void {
+  for (const s of specs) if (!hasOp(s.type)) registerOp(s);
+}
+
+/** Register every built-in op family (idempotent). TOP ops join in M2. */
+export function registerAllOps(): void {
+  registerAll(commonOps);
+  registerAll(chopOps);
+}
