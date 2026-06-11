@@ -35,6 +35,9 @@ export class EditorApp {
   private netEl!: HTMLDivElement;
   private compositor!: HTMLCanvasElement;
   private importLabel!: HTMLLabelElement;
+  private ftrEls!: { fpsEl: HTMLSpanElement; timingEl: HTMLSpanElement; nodeCountEl: HTMLSpanElement; errsEl: HTMLSpanElement };
+  private frameCount = 0;
+  private lastFpsTime = 0;
 
   constructor(private readonly host: HTMLElement, private readonly opts: EditorOptions = {}) {}
 
@@ -116,6 +119,22 @@ export class EditorApp {
 
     bar.append(title, this.projName, newBtn, saveBtn, loadLabel, importLabel, examples, spacer, this.hud, repo, mcpIndicator);
 
+    // ---- footer / status bar
+    const ftr = document.createElement('div');
+    ftr.className = 'wt-ftr';
+    const fpsEl = document.createElement('span');
+    fpsEl.className = 'wt-fps';
+    const timingEl = document.createElement('span');
+    timingEl.className = 'wt-timing';
+    const nodeCountEl = document.createElement('span');
+    nodeCountEl.className = 'wt-nodecount';
+    const errsEl = document.createElement('span');
+    errsEl.className = 'wt-errs';
+    const spacer2 = document.createElement('span');
+    spacer2.className = 'wt-spacer2';
+    ftr.append(fpsEl, timingEl, nodeCountEl, spacer2, errsEl);
+    this.ftrEls = { fpsEl, timingEl, nodeCountEl, errsEl };
+
     // ---- panels
     const net = document.createElement('div');
     this.netEl = net;
@@ -123,8 +142,26 @@ export class EditorApp {
     side.className = 'wt-side';
     const viewerEl = document.createElement('div');
     const paramsEl = document.createElement('div');
-    side.append(viewerEl, paramsEl);
-    root.append(bar, net, side);
+    // Viewer/params draggable splitter
+    const splitterEl = document.createElement('div');
+    splitterEl.className = 'wt-splitter';
+    splitterEl.addEventListener('mousedown', (e) => {
+      e.preventDefault();
+      const startY = e.clientY;
+      const startH = viewerEl.getBoundingClientRect().height;
+      const onMove = (ev: MouseEvent) => {
+        const dh = ev.clientY - startY;
+        const newH = Math.max(60, startH + dh);
+        viewerEl.style.height = newH + 'px';
+        viewerEl.style.flex = 'none';
+        paramsEl.style.flex = '1';
+      };
+      const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
+      document.addEventListener('mousemove', onMove);
+      document.addEventListener('mouseup', onUp);
+    });
+    side.append(viewerEl, splitterEl, paramsEl);
+    root.append(bar, net, side, ftr);
 
     // ---- GPU compositor overlay: one canvas paints the viewer and every
     // visible node preview at full frame rate (no CPU readbacks)
@@ -379,8 +416,26 @@ export class EditorApp {
   }
 
   private loop = (): void => {
+    const t0 = performance.now();
     this.engine.frame(performance.now() / 1000);
     const gpu = this.engine.gpu;
+
+    // Status bar updates (throttled to ~2 Hz)
+    this.frameCount++;
+    const now = performance.now();
+    if (now - this.lastFpsTime > 500) {
+      const fps = Math.round(this.frameCount / ((now - this.lastFpsTime) / 1000));
+      this.lastFpsTime = now;
+      this.frameCount = 0;
+      const dt = (performance.now() - t0).toFixed(1);
+      const nodeCount = this.engine.graph.childrenOf(this.current).length;
+      const errors = this.engine.graph.childrenOf(this.current).filter(n => n.error).length;
+      this.ftrEls.fpsEl.textContent = `⚡ ${fps} FPS`;
+      this.ftrEls.timingEl.textContent = `⏱ ${dt}ms`;
+      this.ftrEls.nodeCountEl.textContent = `🔵 ${nodeCount} nodes`;
+      this.ftrEls.errsEl.textContent = errors ? `⚠️ ${errors} errors` : '';
+    }
+
     gpu?.clearCanvas();
 
     const rootRect = this.rootEl.getBoundingClientRect();

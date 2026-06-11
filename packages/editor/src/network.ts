@@ -85,6 +85,10 @@ export class NetworkView {
         if (!src || src.parent !== this.current) return;
         const p = document.createElementNS(SVG_NS, 'path');
         p.setAttribute('d', this.wirePath(src, n, idx));
+        // Color wire by source node's family
+        const srcSpec = getOp(src.type);
+        const wireColor = srcSpec ? (FAMILY_COLORS[srcSpec.family] ?? '#666') : '#666';
+        p.style.stroke = wireColor;
         this.svg.insertBefore(p, this.preview);
       });
     }

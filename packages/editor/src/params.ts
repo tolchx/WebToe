@@ -35,17 +35,42 @@ export class ParamPanel {
     this.headErr = err;
 
     let page: string | undefined;
+    let bodyEl: HTMLDivElement | null = null;
+    const collapsedPages = new Set<string>();
     for (const ps of spec.params) {
       if (ps.page !== page) {
         page = ps.page;
+        bodyEl = null;
         if (page) {
           const h = document.createElement('div');
           h.className = 'wt-ppage';
           h.textContent = page;
+          h.dataset.page = page;
           this.el.appendChild(h);
+          // Body wrapper for collapsible rows
+          bodyEl = document.createElement('div');
+          bodyEl.className = 'wt-pbody';
+          this.el.appendChild(bodyEl);
+          // Restore collapsed state
+          const stored = sessionStorage.getItem(`wt_page_${node.id}_${page}`);
+          if (stored === '1') {
+            h.classList.add('wt-collapsed');
+            bodyEl.style.display = 'none';
+            collapsedPages.add(page);
+          }
+          h.addEventListener('click', () => {
+            h.classList.toggle('wt-collapsed');
+            const collapsed = h.classList.contains('wt-collapsed');
+            if (bodyEl) bodyEl.style.display = collapsed ? 'none' : '';
+            sessionStorage.setItem(`wt_page_${node.id}_${page!}`, collapsed ? '1' : '0');
+          });
         }
       }
-      this.el.appendChild(this.row(node, ps));
+      if (bodyEl) {
+        bodyEl.appendChild(this.row(node, ps));
+      } else {
+        this.el.appendChild(this.row(node, ps));
+      }
     }
 
     if (node.text !== undefined) {
