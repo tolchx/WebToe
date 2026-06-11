@@ -57,7 +57,7 @@ What the importer recovers: node types and hierarchy, wires (including wires acr
 
 | Family | Operators |
 |---|---|
-| TOP | constant, noise, ramp, rectangle, transform, level, monochrome, hsv adjust, blur, composite, math, switch, select, reorder, flip, displace, edge, feedback, **render**, null, in, out, image in, video in, camera in |
+| TOP | constant, noise, ramp, rectangle, transform, level, monochrome, hsv adjust, blur, composite, math, switch, select, reorder, flip, displace, edge, feedback, **render**, **ndi in/out** (via the local bridge), null, in, out, image in, video in, camera in |
 | CHOP | constant, lfo, noise, math (full TD pipeline), lag, merge, select, switch, speed, parameter, mouse in, in, out |
 | SOP | line, circle, rectangle, grid, sphere, box, tube, torus, merge, transform, noise, copy, skin, add, point, facet, switch, null, in, out |
 | MAT | constant, lit (phong/pbr), line, point sprite, wireframe, switch, null |
@@ -98,6 +98,14 @@ Deep dives: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · execution contract &
 ## Roadmap — measured against real work
 
 To define "complete", we analyzed **60 real TouchDesigner projects (28,698 nodes, 2022–2026)** from a daily-practice generative art portfolio and crawled the **official operator inventory (~675 operators across 7 families)**. Two documents drive the evolution: **[docs/ROADMAP.md](docs/ROADMAP.md)** (phased plan with measured results — corpus coverage: 32.3% → 47.1% → **62.3%** across two measured evolution cycles, the second being the full 3D pipeline) and **[docs/TD-PARITY.md](docs/TD-PARITY.md)** (the full parity charter: per-family op tiers, portable vs web-equivalent vs native-only classification, and the engine-concept gaps — time slicing, audio, 3D, GLSL, POPs, panels — with the standing measure→pick→implement→verify loop).
+
+## NDI In/Out
+
+Browsers can't join NDI networks directly, so WebToe pairs two pieces: a tiny local bridge (`packages/ndi-bridge`, WebSocket on localhost) that owns the NDI side with **your own NDI runtime**, and `ndi in`/`ndi out` TOPs that do the pixel work in the browser — UYVY⇄RGBA conversion runs in a **1 KB WASM kernel** (AssemblyScript source in `packages/wasm-kernels`, JS fallback always available). Try it with zero NDI dependencies: `node packages/ndi-bridge/index.mjs --mock` streams an animated test pattern; for real NDI install the NDI runtime plus `grandiose` in the bridge package. NDI® is a trademark of Vizrt NDI AB — this repo ships no NDI SDK bits.
+
+## For contributors and future agents
+
+[docs/HANDOFF.md](docs/HANDOFF.md) is the complete project log: every experiment with its verdict, the architecture invariants, a catalog of hard-won gotchas, the measured evolution curve, and the standing order of upcoming work with design head-starts.
 
 ## Disclaimer
 

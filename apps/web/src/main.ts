@@ -1,13 +1,17 @@
-import { registerAllOps } from '@webtoe/ops';
+import { initVideoKernelsWasm, registerAllOps } from '@webtoe/ops';
 import { mountEditor } from '@webtoe/editor';
 
 registerAllOps();
+
+const base = import.meta.env.BASE_URL;
+void initVideoKernelsWasm(`${base}wasm/video-kernels.wasm`).then((mode) => {
+  console.log(`[webtoe] video kernels: ${mode}`);
+});
 
 document.body.style.margin = '0';
 const app = document.getElementById('app')!;
 app.style.cssText = 'position:fixed;inset:0;';
 
-const base = import.meta.env.BASE_URL;
 
 const editorPromise = mountEditor(app, {
   examples: [

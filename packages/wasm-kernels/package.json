@@ -1,0 +1,13 @@
+{
+  "name": "@webtoe/wasm-kernels",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "AssemblyScript sources for WebToe's WASM kernels (video pixel conversion). The committed .wasm artifact ships with the app; JS fallbacks in @webtoe/ops remain the reference.",
+  "scripts": {
+    "build": "asc assembly/index.ts -o build/video-kernels.wasm --runtime stub -O3 && cp build/video-kernels.wasm ../../apps/web/public/wasm/video-kernels.wasm"
+  },
+  "devDependencies": {
+    "assemblyscript": "^0.28.2"
+  }
+}

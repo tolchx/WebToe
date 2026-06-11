@@ -8,7 +8,8 @@ A browser engine can reach **creative-semantics parity** — networks, cooking, 
 
 - **Portable** — pure compute/render semantics (most TOPs/CHOPs/SOPs/POPs/MATs): implementable as-is.
 - **Web-equivalent** — device/IO ops with a browser counterpart: Video Device In → getUserMedia ✅, MIDI In → WebMIDI, OSC/TCP/UDP → WebSocket bridges, Audio Device In/Out → WebAudio, Screen Grab → getDisplayMedia, Web Render → iframe texture.
-- **Native-only** — declared out of scope honestly: NDI/Spout/Syphon, DirectX/SDI/ST2110, vendor SDKs (Kinect/ZED/Oculus/NVIDIA-specific), CPlusPlus ops, Notch/Substance hosts.
+- **Web-equivalent via local bridge** — device/network I/O with no browser primitive gets a small local bridge process (the user-installs-it pattern, like toeexpand): **NDI In/Out shipped this way** (`packages/ndi-bridge` + WASM pixel kernels; mock mode needs nothing, real mode uses the user's NDI runtime). The same pattern can serve Art-Net, Syphon/Spout capture, and serial.
+- **Native-only** — declared out of scope honestly: DirectX/SDI/ST2110, vendor SDKs (Kinect/ZED/Oculus/NVIDIA-specific), CPlusPlus ops, Notch/Substance hosts.
 
 ## Operator inventory vs official TouchDesigner (2026 docs)
 

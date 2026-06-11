@@ -1,0 +1,14 @@
+{
+  "name": "webtoe-ndi-bridge",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Local NDI <-> WebSocket bridge for WebToe's ndi in/out TOPs. NDI is a trademark of Vizrt NDI AB; this bridge ships no NDI SDK bits — real mode requires the user-installed NDI runtime via the optional 'grandiose' dependency. Mock mode needs nothing.",
+  "bin": { "webtoe-ndi-bridge": "./index.mjs" },
+  "dependencies": {
+    "ws": "^8.18.0"
+  },
+  "optionalDependencies": {
+    "grandiose": "^0.2.0"
+  }
+}

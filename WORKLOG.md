@@ -110,3 +110,10 @@ Backlog (v2 — full detail and measured targets in docs/ROADMAP.md, full parity
 2. Importer round 3: cross-network wire resolution, raw-.toe drop explainer modal, more TYPE_MAP/PARAM_MAP entries driven by real import-report histograms, media relink-by-drop flow.
 3. Editor round 2: marquee select, undo/redo, node rename UI, COMP display-child preview thumbs, mobile/touch pan-zoom.
 4. Watch derivative.ca for the official JSON text format → add the second ProjectLoader (PLAN §3 adapter).
+
+## 2026-06-11 — agent handoff log + NDI In/Out (bridge + WASM)
+
+- **docs/HANDOFF.md**: the full continuity document for the next agent — resume protocol, measured curve (32.3→47.1→62.3), experiment ledger with verdicts (incl. the twice-confirmed .toe-binary dead end), architecture invariants, footgun catalog (TD semantics + platform + editor), strategy principles, standing order with design head-starts (multi-sample CHOP sketch, R4/R5), 12-month structural notes. Private machine/corpus companion lives outside the repo.
+- **NDI In/Out**: honest architecture — local bridge (`packages/ndi-bridge`: ws server, `--mock` animated UYVY test source + frame sink with zero NDI deps; real mode via user-installed NDI runtime + optional `grandiose`) ⇄ versioned binary frame protocol ⇄ `top:ndiin`/`top:ndiout` ops ⇄ **WASM video kernels** (AssemblyScript in `packages/wasm-kernels`, 1 KB artifact committed + served; BT.601 UYVY⇄RGBA + BGRA swizzle; JS reference is unit-tested fallback; loader swaps provider at boot — console logs `video kernels: wasm`).
+- Verified end-to-end in browser with the mock bridge: ndiin renders the animated rainbow pattern through the WASM path (zero errors, frames animate), ndiout streams noise back (bridge log: `← browser frame #1 320x180 RGBA`). 66/66 tests incl. kernel math + protocol round-trip.
+- TD-PARITY: NDI reclassified native-only → **web-equivalent via local bridge**; the pattern generalizes (Art-Net, Syphon capture). README documents usage + NDI trademark notice.
