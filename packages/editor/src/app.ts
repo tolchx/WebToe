@@ -428,8 +428,10 @@ export class EditorApp {
       this.lastFpsTime = now;
       this.frameCount = 0;
       const dt = (performance.now() - t0).toFixed(1);
-      const nodeCount = this.engine.graph.childrenOf(this.current).length;
-      const errors = this.engine.graph.childrenOf(this.current).filter(n => n.error).length;
+      const curContainer = this.network?.current;
+      const kids = curContainer ? this.engine.graph.childrenOf(curContainer) : [];
+      const nodeCount = kids.length;
+      const errors = kids.filter(n => n.error).length;
       this.ftrEls.fpsEl.textContent = `⚡ ${fps} FPS`;
       this.ftrEls.timingEl.textContent = `⏱ ${dt}ms`;
       this.ftrEls.nodeCountEl.textContent = `🔵 ${nodeCount} nodes`;
