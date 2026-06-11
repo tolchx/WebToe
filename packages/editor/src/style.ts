@@ -259,7 +259,44 @@ const CSS = `
 .wt-ftr .wt-spacer2 { flex:1; }
 .wt-ftr .wt-timing { color:#666; }
 .wt-ftr .wt-nodecount { color:#666; }
-`;
+
+/* ── RESPONSIVE ─────────────────────────────────────────────────── */
+@media (max-width: 768px) {
+  .wt-root {
+    grid-template-columns: 1fr;
+    grid-template-rows: 40px auto 1fr 28px;
+    grid-template-areas: "bar" "side" "net" "ftr";
+  }
+  .wt-side {
+    border-left: none;
+    border-bottom: 2px solid #2a2a30;
+    max-height: 45vh;
+  }
+  .wt-viewer { height: 180px; flex: none; }
+  .wt-params { font-size: 11px; }
+  .wt-node { width: 110px; }
+  .wt-node .wt-label { font-size: 10px; padding: 3px 6px 0 8px; }
+  .wt-node .wt-typ { font-size: 8px; padding: 0 6px 4px 8px; }
+  .wt-node .wt-thumb { height: 40px; margin: 3px 4px 0 7px; }
+  .wt-prow { grid-template-columns: 70px 1fr 20px; gap: 3px; padding: 3px 8px; min-height: 22px; }
+  .wt-prow .wt-plabel { font-size: 10px; }
+  .wt-prow input[type="text"], .wt-prow input[type="number"], .wt-prow select { font-size: 10px; padding: 2px 4px; }
+  .wt-bar { gap: 4px; padding: 0 6px; overflow-x: auto; }
+  .wt-bar .wt-title { font-size: 12px; }
+  .wt-bar input.wt-projname { width: 80px; font-size: 10px; }
+  .wt-ftr { font-size: 8px; gap: 8px; padding: 0 6px; }
+  .wt-palette { width: 90vw; max-height: 60vh; left: 5vw; }
+  .wt-palette .wt-pgrid { grid-template-columns: repeat(2, 1fr); }
+  .wt-hint { display: none; }
+}
+@media (max-width: 480px) {
+  .wt-root { grid-template-rows: 40px auto 1fr 24px; }
+  .wt-side { max-height: 40vh; }
+  .wt-viewer { height: 140px; }
+  .wt-node { width: 94px; }
+  .wt-node .wt-label { font-size: 9px; }
+  .wt-bar button, .wt-bar select { padding: 2px 4px; font-size: 9px; }
+}`;
 
 let injected = false;
 

@@ -6,7 +6,7 @@ import { fileURLToPath } from 'node:url';
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
 export default defineConfig({
-  base: '/WebToe/',
+  base: process.env.VITE_BASE || '/webtoe/',
   build: { target: 'es2022' },
   server: {
     port: 8643,
