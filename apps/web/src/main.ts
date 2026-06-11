@@ -16,6 +16,9 @@ const editorPromise = mountEditor(app, {
     { name: '03 lfo garden', url: `${base}examples/03-lfo-garden.webtoe.json` },
     { name: '04 webcam displace', url: `${base}examples/04-webcam-displace.webtoe.json` },
     { name: '05 chop playground', url: `${base}examples/05-chop-playground.webtoe.json` },
+    { name: '06 sketch: voronoi (2022, imported)', url: `${base}examples/06-sketch-voronoi.webtoe.json` },
+    { name: '07 sketch: fractals (2022, imported)', url: `${base}examples/07-sketch-fractals.webtoe.json` },
+    { name: '08 sketch: chop study (2022, imported)', url: `${base}examples/08-sketch-chop-study.webtoe.json` },
   ],
 });
 

@@ -373,8 +373,11 @@ export const toedirLoader: ProjectLoader = {
             const q = rest.match(/^"([^"]*)"/);
             value = q ? q[1] : rest.split(/\s+/)[0];
           } else {
-            const first = rest.trim();
-            value = Number.isFinite(Number(first)) ? Number(first) : first;
+            let first = rest.trim();
+            // string constants may be stored quoted (e.g. channames 0 "tx ty")
+            const q = first.match(/^"([^"]*)"$/);
+            if (q) first = q[1];
+            value = first !== '' && Number.isFinite(Number(first)) ? Number(first) : first;
           }
           if ('toColor' in rule) {
             colorAcc[rule.toColor] ??= [1, 1, 1, 1];

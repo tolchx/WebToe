@@ -225,13 +225,15 @@ fn blend(base: vec4f, layer: vec4f) -> vec4f {
   return vec4f(abs(base.rgb - layer.rgb), max(base.a, layer.a));
 }
 @fragment fn fs(in: VOut) -> @location(0) vec4f {
-  var c = textureSample(tex0, samp, in.uv);
-  let l1 = textureSample(tex1, samp, in.uv);
-  let l2 = textureSample(tex2, samp, in.uv);
-  let l3 = textureSample(tex3, samp, in.uv);
-  if (P.u_count.x > 1.5) { c = blend(c, l1); }
-  if (P.u_count.x > 2.5) { c = blend(c, l2); }
-  if (P.u_count.x > 3.5) { c = blend(c, l3); }
+  let t0 = textureSample(tex0, samp, in.uv);
+  let t1 = textureSample(tex1, samp, in.uv);
+  let t2 = textureSample(tex2, samp, in.uv);
+  let t3 = textureSample(tex3, samp, in.uv);
+  var c: vec4f;
+  if (P.u_count.x > 3.5)      { c = t3; c = blend(c, t2); c = blend(c, t1); c = blend(c, t0); }
+  else if (P.u_count.x > 2.5) { c = t2; c = blend(c, t1); c = blend(c, t0); }
+  else if (P.u_count.x > 1.5) { c = t1; c = blend(c, t0); }
+  else                        { c = t0; }
   return c;
 }`;
 

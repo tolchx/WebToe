@@ -1,0 +1,314 @@
+{
+ "app": "webtoe",
+ "version": 1,
+ "root": {
+  "nodes": [
+   {
+    "name": "blur1",
+    "type": "top:blur",
+    "family": "TOP",
+    "pos": [
+     1765,
+     415
+    ],
+    "params": {
+     "size": {
+      "mode": "const",
+      "value": 32
+     }
+    }
+   },
+   {
+    "name": "blur2",
+    "type": "top:blur",
+    "family": "TOP",
+    "pos": [
+     1115,
+     315
+    ],
+    "params": {
+     "size": {
+      "mode": "const",
+      "value": 15
+     }
+    }
+   },
+   {
+    "name": "blur3",
+    "type": "top:blur",
+    "family": "TOP",
+    "pos": [
+     1340,
+     190
+    ],
+    "params": {
+     "size": {
+      "mode": "const",
+      "value": 1
+     }
+    }
+   },
+   {
+    "name": "comp1",
+    "type": "top:composite",
+    "family": "TOP",
+    "pos": [
+     1290,
+     440
+    ],
+    "params": {
+     "operation": {
+      "mode": "const",
+      "value": "subtract"
+     }
+    }
+   },
+   {
+    "name": "comp2",
+    "type": "top:composite",
+    "family": "TOP",
+    "pos": [
+     590,
+     190
+    ],
+    "params": {
+     "operation": {
+      "mode": "const",
+      "value": "subtractive"
+     }
+    }
+   },
+   {
+    "name": "displace1",
+    "type": "top:displace",
+    "family": "TOP",
+    "pos": [
+     2490,
+     415
+    ]
+   },
+   {
+    "name": "edge1",
+    "type": "top:edge",
+    "family": "TOP",
+    "pos": [
+     815,
+     165
+    ],
+    "params": {
+     "strength": {
+      "mode": "const",
+      "value": 0.2
+     }
+    }
+   },
+   {
+    "name": "feedback1",
+    "type": "top:feedback",
+    "family": "TOP",
+    "pos": [
+     390,
+     190
+    ]
+   },
+   {
+    "name": "keyboardin1",
+    "type": "chop:stub",
+    "family": "CHOP",
+    "pos": [
+     240,
+     40
+    ],
+    "foreignType": "CHOP:keyboardin"
+   },
+   {
+    "name": "lookup1",
+    "type": "top:stub",
+    "family": "TOP",
+    "pos": [
+     3165,
+     390
+    ],
+    "foreignType": "TOP:lookup"
+   },
+   {
+    "name": "noise1",
+    "type": "top:noise",
+    "family": "TOP",
+    "pos": [
+     40,
+     390
+    ],
+    "params": {
+     "period": {
+      "mode": "const",
+      "value": 2
+     },
+     "harmonics": {
+      "mode": "const",
+      "value": 5
+     },
+     "exponent": {
+      "mode": "const",
+      "value": 2
+     }
+    }
+   },
+   {
+    "name": "noise2",
+    "type": "top:noise",
+    "family": "TOP",
+    "pos": [
+     40,
+     540
+    ],
+    "params": {
+     "period": {
+      "mode": "const",
+      "value": 1.59
+     },
+     "harmonics": {
+      "mode": "const",
+      "value": 6
+     },
+     "exponent": {
+      "mode": "const",
+      "value": 0.72
+     }
+    }
+   },
+   {
+    "name": "null1",
+    "type": "top:null",
+    "family": "TOP",
+    "pos": [
+     415,
+     390
+    ],
+    "flags": {
+     "display": true
+    }
+   },
+   {
+    "name": "null2",
+    "type": "top:null",
+    "family": "TOP",
+    "pos": [
+     240,
+     540
+    ]
+   },
+   {
+    "name": "out1",
+    "type": "top:null",
+    "family": "TOP",
+    "pos": [
+     3590,
+     390
+    ]
+   },
+   {
+    "name": "ramp1_keys",
+    "type": "dat:table",
+    "family": "DAT",
+    "pos": [
+     2865,
+     640
+    ]
+   },
+   {
+    "name": "ramp1",
+    "type": "top:ramp",
+    "family": "TOP",
+    "pos": [
+     2865,
+     515
+    ]
+   },
+   {
+    "name": "slope1",
+    "type": "top:stub",
+    "family": "TOP",
+    "pos": [
+     1515,
+     440
+    ],
+    "foreignType": "TOP:slope"
+   }
+  ],
+  "wires": [
+   {
+    "from": "slope1:0",
+    "to": "blur1:0"
+   },
+   {
+    "from": "edge1:0",
+    "to": "blur2:0"
+   },
+   {
+    "from": "edge1:0",
+    "to": "blur3:0"
+   },
+   {
+    "from": "null1:0",
+    "to": "comp1:0"
+   },
+   {
+    "from": "blur2:0",
+    "to": "comp1:1"
+   },
+   {
+    "from": "feedback1:0",
+    "to": "comp2:0"
+   },
+   {
+    "from": "null1:0",
+    "to": "comp2:1"
+   },
+   {
+    "from": "blur3:0",
+    "to": "displace1:0"
+   },
+   {
+    "from": "blur1:0",
+    "to": "displace1:1"
+   },
+   {
+    "from": "comp2:0",
+    "to": "edge1:0"
+   },
+   {
+    "from": "noise1:0",
+    "to": "feedback1:0"
+   },
+   {
+    "from": "displace1:0",
+    "to": "lookup1:0"
+   },
+   {
+    "from": "ramp1:0",
+    "to": "lookup1:1"
+   },
+   {
+    "from": "null2:0",
+    "to": "null1:0"
+   },
+   {
+    "from": "noise2:0",
+    "to": "null2:0"
+   },
+   {
+    "from": "lookup1:0",
+    "to": "out1:0"
+   },
+   {
+    "from": "comp1:0",
+    "to": "slope1:0"
+   }
+  ]
+ },
+ "meta": {
+  "title": "sketch: pseudo voronoi (2022)",
+  "comment": "a 2022 daily sketch imported from TouchDesigner \u2014 pseudo-voronoi from animated noise"
+ }
+}

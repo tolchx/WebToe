@@ -73,9 +73,14 @@ Append-only build log. Protocol: every work chunk gets an entry — timestamp, w
 - **Deep research landed** (104 agents, 23 claims verified 3-0): TD GLSL TOP injected contract fully documented → ROADMAP R4 shim table (headerless GLSL 4.60, sTD2DInputs arrays, vUV, uTD*Infos res packing, TDOutputSwizzle, pixel/compute modes). WebGPU-particle + minimal-renderer findings inform R3/R5 specs. JSON-format status: no newer-than-2025-10 statements found.
 - Engine: fps delta floor refined earlier today holds; param cycle guard added (`.par` chains can recurse).
 
-## NEXT
+## 2026-06-11 — experience completion: compositor previews, create dialog, real sketches as examples
 
-**Direction shift (user, 2026-06-11 PM): pause new op types — complete the experience.** In flight: TD-style OP Create dialog (family tabs + grid replacing the list palette), real-time 60fps node previews via a GPU compositor overlay (kill 6Hz readbacks), then convert a few small 2022 sketches into bundled examples that run smoothly.
+- **Real-time previews**: one transparent GPU compositor canvas overlays the editor; each frame it scissor-blits the viewer rect plus every visible TOP node's thumb rect on both backends (contain-fit, clipped to the network panel). The 6 Hz readPixels thumbnail path is gone — previews run at full frame rate with zero CPU readbacks. `blitToCanvas(tex, rect?)` + `clearCanvas()` joined the pass contract.
+- **OP Create dialog**: palette redesigned (family tabs TOP/CHOP/COMP/DAT, searchable 3-column grid, arrow/Tab/Enter keyboard flow, search spans families). Original styling.
+- **Three real 2022 sketches imported as bundled examples** (06 pseudo-voronoi, 07 fractals, 08 chop study): converted via the full importer from the original .toe files, TD scaffolding (local/perform) stripped, lightly adapted (dead movie source → noise; circle TOP stub → soft rectangle; `click` channel idiom → `lmb` with idle offsets). All three verified rendering + interacting, zero node errors.
+- **Two engine fixes found by the real sketches** (the point of dogfooding): (1) composite/over layer order now TD-compatible — input 0 is the TOP layer (the imported patch's opaque background had covered everything; bundled trails example rewired accordingly); (2) importer unquotes quoted string constants (`channames 0 "tx ty"` had kept literal quotes, breaking select patterns) — regression tests added for both. 49 tests.
+
+## NEXT
 
 Backlog (v2 — full detail and measured targets in docs/ROADMAP.md):
 1. M8 compute particle family (POPs spirit) + audio-rate CHOPs (wasm decision per PLAN §5 benchmark gate).

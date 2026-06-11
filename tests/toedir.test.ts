@@ -26,6 +26,8 @@ function fixture(): ImportFile[] {
     'cross1.n': 'TOP:level\ntile 900 400 130 90\ninputs\n{\n0 \tscene1/inner1\n}\nend\n',
     'switch1.n': 'TOP:switch\ntile 1100 400 130 90\ninputs\n{\n0 \tnoise1\n1 \tlevel1\n}\nend\n',
     'switch1.parm': '?\nindex 17 0 absTime.frame % 2\n?\n',
+    'pick1.n': 'CHOP:select\ntile 1100 200 130 60\nend\n',
+    'pick1.parm': '?\nchannames 0 "tx ty"\n?\n',
     'scene1/in2.n': 'TOP:in\ntile 0 200 130 90\nend\n',
     'data1.n': 'DAT:table\ntile 100 600 130 60\nend\n',
     'data1.table': 'name\tvalue\nspeed\t3\n',
@@ -69,9 +71,11 @@ describe('toedir importer', () => {
     const in2 = g.resolve('/scene1/in2', g.root)!;
     expect(in2.type).toBe('top:in');
     expect(in2.params.get('index')?.value).toBe(1);
+    // quoted string constants are unquoted
+    expect(g.resolve('/pick1', g.root)?.params.get('channames')?.value).toBe('tx ty');
 
-    expect(report.nodesTotal).toBe(11);
-    expect(report.nodesMapped).toBe(9);
+    expect(report.nodesTotal).toBe(12);
+    expect(report.nodesMapped).toBe(10);
     expect(report.nodesStubbed).toBe(2);
   });
 

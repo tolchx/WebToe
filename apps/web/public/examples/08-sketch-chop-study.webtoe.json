@@ -1,0 +1,468 @@
+{
+ "app": "webtoe",
+ "version": 1,
+ "root": {
+  "nodes": [
+   {
+    "name": "circle1",
+    "type": "top:rectangle",
+    "family": "TOP",
+    "pos": [
+     365,
+     840
+    ],
+    "params": {
+     "sizex": {
+      "mode": "const",
+      "value": 0.5
+     },
+     "sizey": {
+      "mode": "const",
+      "value": 0.5
+     },
+     "softness": {
+      "mode": "const",
+      "value": 0.22
+     },
+     "bgcolor": {
+      "mode": "const",
+      "value": [
+       0,
+       0,
+       0,
+       1
+      ]
+     }
+    }
+   },
+   {
+    "name": "comp1",
+    "type": "top:composite",
+    "family": "TOP",
+    "pos": [
+     2065,
+     790
+    ],
+    "params": {
+     "operation": {
+      "mode": "const",
+      "value": "add"
+     }
+    }
+   },
+   {
+    "name": "comp2",
+    "type": "top:composite",
+    "family": "TOP",
+    "pos": [
+     615,
+     690
+    ]
+   },
+   {
+    "name": "constant1",
+    "type": "top:constant",
+    "family": "TOP",
+    "pos": [
+     265,
+     1040
+    ],
+    "params": {
+     "color": {
+      "mode": "const",
+      "value": [
+       0,
+       0,
+       0,
+       1
+      ]
+     }
+    }
+   },
+   {
+    "name": "feedback1",
+    "type": "top:feedback",
+    "family": "TOP",
+    "pos": [
+     1615,
+     565
+    ]
+   },
+   {
+    "name": "lag1",
+    "type": "chop:lag",
+    "family": "CHOP",
+    "pos": [
+     540,
+     415
+    ],
+    "params": {
+     "lagup": {
+      "mode": "const",
+      "value": 0
+     },
+     "lagdown": {
+      "mode": "const",
+      "value": 1
+     }
+    }
+   },
+   {
+    "name": "lag2",
+    "type": "chop:lag",
+    "family": "CHOP",
+    "pos": [
+     865,
+     265
+    ],
+    "params": {
+     "lagup": {
+      "mode": "const",
+      "value": 0.1
+     },
+     "lagdown": {
+      "mode": "const",
+      "value": 0.1
+     }
+    }
+   },
+   {
+    "name": "level1",
+    "type": "top:level",
+    "family": "TOP",
+    "pos": [
+     990,
+     665
+    ],
+    "params": {
+     "opacity": {
+      "mode": "expr",
+      "value": 1,
+      "expr": "0.25 + op('null3')['lmb'] * 0.75"
+     }
+    }
+   },
+   {
+    "name": "level2",
+    "type": "top:level",
+    "family": "TOP",
+    "pos": [
+     1865,
+     565
+    ],
+    "params": {
+     "brightness": {
+      "mode": "const",
+      "value": 0.99
+     }
+    }
+   },
+   {
+    "name": "lookup1",
+    "type": "top:stub",
+    "family": "TOP",
+    "pos": [
+     2515,
+     790
+    ],
+    "foreignType": "TOP:lookup"
+   },
+   {
+    "name": "math1",
+    "type": "chop:math",
+    "family": "CHOP",
+    "pos": [
+     540,
+     265
+    ]
+   },
+   {
+    "name": "math2",
+    "type": "chop:math",
+    "family": "CHOP",
+    "pos": [
+     515,
+     40
+    ]
+   },
+   {
+    "name": "mousein1",
+    "type": "chop:mousein",
+    "family": "CHOP",
+    "pos": [
+     40,
+     365
+    ]
+   },
+   {
+    "name": "moviefilein1",
+    "type": "top:noise",
+    "family": "TOP",
+    "pos": [
+     940,
+     40
+    ],
+    "params": {
+     "period": {
+      "mode": "const",
+      "value": 0.5
+     },
+     "speed": {
+      "mode": "const",
+      "value": 0.2
+     },
+     "mono": {
+      "mode": "const",
+      "value": false
+     }
+    }
+   },
+   {
+    "name": "null2",
+    "type": "chop:merge",
+    "family": "CHOP",
+    "pos": [
+     1315,
+     265
+    ]
+   },
+   {
+    "name": "null3",
+    "type": "chop:merge",
+    "family": "CHOP",
+    "pos": [
+     990,
+     415
+    ]
+   },
+   {
+    "name": "null4",
+    "type": "chop:merge",
+    "family": "CHOP",
+    "pos": [
+     715,
+     40
+    ]
+   },
+   {
+    "name": "out1",
+    "type": "top:null",
+    "family": "TOP",
+    "pos": [
+     2890,
+     790
+    ],
+    "flags": {
+     "display": true
+    }
+   },
+   {
+    "name": "over1",
+    "type": "top:composite",
+    "family": "TOP",
+    "pos": [
+     1315,
+     790
+    ],
+    "params": {
+     "operation": {
+      "mode": "const",
+      "value": "over"
+     }
+    }
+   },
+   {
+    "name": "ramp1_keys",
+    "type": "dat:table",
+    "family": "DAT",
+    "pos": [
+     315,
+     790
+    ]
+   },
+   {
+    "name": "ramp1",
+    "type": "top:ramp",
+    "family": "TOP",
+    "pos": [
+     315,
+     665
+    ],
+    "params": {
+     "type": {
+      "mode": "const",
+      "value": "circular"
+     },
+     "phase": {
+      "mode": "expr",
+      "value": 0,
+      "expr": "time.seconds*.2"
+     }
+    }
+   },
+   {
+    "name": "ramp2_keys",
+    "type": "dat:table",
+    "family": "DAT",
+    "pos": [
+     2265,
+     1015
+    ]
+   },
+   {
+    "name": "ramp2",
+    "type": "top:ramp",
+    "family": "TOP",
+    "pos": [
+     2265,
+     915
+    ]
+   },
+   {
+    "name": "select1",
+    "type": "chop:select",
+    "family": "CHOP",
+    "pos": [
+     290,
+     265
+    ],
+    "params": {
+     "channames": {
+      "mode": "const",
+      "value": "tx ty"
+     }
+    }
+   },
+   {
+    "name": "select2",
+    "type": "chop:select",
+    "family": "CHOP",
+    "pos": [
+     290,
+     415
+    ],
+    "params": {
+     "channames": {
+      "mode": "const",
+      "value": "lmb"
+     }
+    }
+   },
+   {
+    "name": "transform1",
+    "type": "top:transform",
+    "family": "TOP",
+    "pos": [
+     790,
+     665
+    ],
+    "params": {
+     "sx": {
+      "mode": "expr",
+      "value": 1,
+      "expr": "0.35 + op('null3')['lmb'] * 0.65"
+     },
+     "sy": {
+      "mode": "expr",
+      "value": 1,
+      "expr": "0.35 + op('null3')['lmb'] * 0.65"
+     }
+    }
+   }
+  ],
+  "wires": [
+   {
+    "from": "over1:0",
+    "to": "comp1:0"
+   },
+   {
+    "from": "level2:0",
+    "to": "comp1:1"
+   },
+   {
+    "from": "ramp1:0",
+    "to": "comp2:0"
+   },
+   {
+    "from": "circle1:0",
+    "to": "comp2:1"
+   },
+   {
+    "from": "over1:0",
+    "to": "feedback1:0"
+   },
+   {
+    "from": "select2:0",
+    "to": "lag1:0"
+   },
+   {
+    "from": "math1:0",
+    "to": "lag2:0"
+   },
+   {
+    "from": "transform1:0",
+    "to": "level1:0"
+   },
+   {
+    "from": "feedback1:0",
+    "to": "level2:0"
+   },
+   {
+    "from": "comp1:0",
+    "to": "lookup1:0"
+   },
+   {
+    "from": "ramp2:0",
+    "to": "lookup1:1"
+   },
+   {
+    "from": "select1:0",
+    "to": "math1:0"
+   },
+   {
+    "from": "select1:0",
+    "to": "math2:0"
+   },
+   {
+    "from": "lag2:0",
+    "to": "null2:0"
+   },
+   {
+    "from": "lag1:0",
+    "to": "null3:0"
+   },
+   {
+    "from": "math2:0",
+    "to": "null4:0"
+   },
+   {
+    "from": "lookup1:0",
+    "to": "out1:0"
+   },
+   {
+    "from": "level1:0",
+    "to": "over1:0"
+   },
+   {
+    "from": "constant1:0",
+    "to": "over1:1"
+   },
+   {
+    "from": "mousein1:0",
+    "to": "select1:0"
+   },
+   {
+    "from": "mousein1:0",
+    "to": "select2:0"
+   },
+   {
+    "from": "comp2:0",
+    "to": "transform1:0"
+   }
+  ]
+ },
+ "meta": {
+  "title": "sketch: chop study + lag (2022)",
+  "comment": "a 2022 daily sketch imported from TouchDesigner \u2014 click and move in the viewer: lagged mouse channels scale the composite (movie source adapted to noise for the web)"
+ }
+}

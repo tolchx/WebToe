@@ -1,0 +1,196 @@
+{
+ "app": "webtoe",
+ "version": 1,
+ "root": {
+  "nodes": [
+   {
+    "name": "comp1",
+    "type": "top:composite",
+    "family": "TOP",
+    "pos": [
+     1190,
+     165
+    ],
+    "params": {
+     "operation": {
+      "mode": "const",
+      "value": "average"
+     }
+    }
+   },
+   {
+    "name": "comp2",
+    "type": "top:composite",
+    "family": "TOP",
+    "pos": [
+     940,
+     340
+    ],
+    "params": {
+     "operation": {
+      "mode": "const",
+      "value": "overlay"
+     }
+    }
+   },
+   {
+    "name": "comp3",
+    "type": "top:composite",
+    "family": "TOP",
+    "pos": [
+     1290,
+     665
+    ],
+    "params": {
+     "operation": {
+      "mode": "const",
+      "value": "average"
+     }
+    }
+   },
+   {
+    "name": "comp4",
+    "type": "top:composite",
+    "family": "TOP",
+    "pos": [
+     1065,
+     765
+    ],
+    "params": {
+     "operation": {
+      "mode": "const",
+      "value": "overlay"
+     }
+    }
+   },
+   {
+    "name": "feedback1",
+    "type": "top:feedback",
+    "family": "TOP",
+    "pos": [
+     740,
+     165
+    ]
+   },
+   {
+    "name": "keyboardin1",
+    "type": "chop:stub",
+    "family": "CHOP",
+    "pos": [
+     590,
+     40
+    ],
+    "foreignType": "CHOP:keyboardin"
+   },
+   {
+    "name": "noise1",
+    "type": "top:noise",
+    "family": "TOP",
+    "pos": [
+     40,
+     240
+    ],
+    "params": {
+     "period": {
+      "mode": "const",
+      "value": 3
+     },
+     "harmonics": {
+      "mode": "const",
+      "value": 1
+     }
+    }
+   },
+   {
+    "name": "null1",
+    "type": "top:null",
+    "family": "TOP",
+    "pos": [
+     290,
+     240
+    ],
+    "flags": {
+     "display": true
+    }
+   },
+   {
+    "name": "out1",
+    "type": "top:null",
+    "family": "TOP",
+    "pos": [
+     2040,
+     165
+    ]
+   },
+   {
+    "name": "rectangle1",
+    "type": "top:rectangle",
+    "family": "TOP",
+    "pos": [
+     890,
+     665
+    ]
+   },
+   {
+    "name": "rgbkey1",
+    "type": "top:stub",
+    "family": "TOP",
+    "pos": [
+     1740,
+     165
+    ],
+    "foreignType": "TOP:rgbkey"
+   }
+  ],
+  "wires": [
+   {
+    "from": "feedback1:0",
+    "to": "comp1:0"
+   },
+   {
+    "from": "comp2:0",
+    "to": "comp1:1"
+   },
+   {
+    "from": "null1:0",
+    "to": "comp2:0"
+   },
+   {
+    "from": "feedback1:0",
+    "to": "comp2:1"
+   },
+   {
+    "from": "rectangle1:0",
+    "to": "comp3:0"
+   },
+   {
+    "from": "comp4:0",
+    "to": "comp3:1"
+   },
+   {
+    "from": "rectangle1:0",
+    "to": "comp4:0"
+   },
+   {
+    "from": "null1:0",
+    "to": "feedback1:0"
+   },
+   {
+    "from": "noise1:0",
+    "to": "null1:0"
+   },
+   {
+    "from": "rgbkey1:0",
+    "to": "out1:0"
+   },
+   {
+    "from": "comp1:0",
+    "to": "rgbkey1:0"
+   }
+  ]
+ },
+ "meta": {
+  "title": "sketch: fractals (2022)",
+  "comment": "a 2022 daily sketch imported from TouchDesigner \u2014 fractal-ish feedback noise"
+ }
+}

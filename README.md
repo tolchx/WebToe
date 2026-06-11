@@ -14,7 +14,7 @@ WebToe is an original engine and editor built from scratch for the web. It is no
 
 ## Highlights
 
-- **Patch live in the browser** — network editor with a searchable op palette (`Tab` / double-click), wire dragging, container hierarchy with in/out tunneling, live per-node preview thumbnails, and a parameter panel with sliders, menus, and per-parameter **expressions** (`op('lfo1')['chan1']`, `time.seconds * 0.2`, …).
+- **Patch live in the browser** — network editor with a create-operator dialog (`Tab` / double-click: family tabs, searchable grid), wire dragging, container hierarchy with in/out tunneling, **real-time previews on every node** (one GPU compositor paints the viewer and all visible thumbnails at full frame rate — no CPU readbacks), and a parameter panel with sliders, menus, and per-parameter **expressions** (`op('lfo1')['chan1']`, `parent().par.speed`, `time.seconds * 0.2`, …).
 - **Real-time GPU engine** — pull-based cook loop; TOPs run as GPU passes, CHOPs drive parameters; feedback loops, separable blur, 6-mode compositing, displacement, edge detection, webcam/video/image input.
 - **Two GPU backends at parity** — WebGL2 (default, universal) and WebGPU (`?backend=webgpu`), both speaking one backend-agnostic pass contract; WebGPU's compute path is reserved for the upcoming particle family.
 - **TouchDesigner import** — supported operators run live, everything else becomes a faithful stub preserving names, wires, layout, parameters, and Python code, with an honest report. Verified on real production projects.
@@ -63,7 +63,7 @@ Plus per-family stub operators used by the importer. Expressions ship with `time
 
 ## Examples
 
-Five bundled projects load from the toolbar and run out of the box: **hello noise** (expression-driven brightness), **feedback trails** (move your mouse over the viewer), **lfo garden** (additive ramp chains with hue drift), **webcam displace** (allow camera access; degrades gracefully without one), **chop playground** (select `merge1` to scope raw vs lagged channels).
+Eight bundled projects load from the toolbar and run out of the box — five authored for WebToe: **hello noise** (expression-driven brightness), **feedback trails** (move your mouse over the viewer), **lfo garden** (additive ramp chains with hue drift), **webcam displace** (allow camera access; degrades gracefully without one), **chop playground** (select `merge1` to scope raw vs lagged channels) — and three **real 2022 TouchDesigner daily sketches imported through the `.toe` pipeline** (pseudo-voronoi, fractal feedback, and a mouse-interactive CHOP study; lightly adapted for the web, e.g. movie sources swapped for noise).
 
 ## Quick start (development)
 

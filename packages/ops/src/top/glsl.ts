@@ -240,10 +240,16 @@ vec4 blend(vec4 base, vec4 layer) {
   else                 return vec4(abs(base.rgb - layer.rgb), max(base.a, layer.a));         // difference
 }
 void main() {
-  vec4 c = texture(u_tex0, v_uv);
-  if (u_count > 1.5) c = blend(c, texture(u_tex1, v_uv));
-  if (u_count > 2.5) c = blend(c, texture(u_tex2, v_uv));
-  if (u_count > 3.5) c = blend(c, texture(u_tex3, v_uv));
+  // TD-compatible layer order: input 0 is the TOP layer, the last input is the base
+  vec4 t0 = texture(u_tex0, v_uv);
+  vec4 t1 = texture(u_tex1, v_uv);
+  vec4 t2 = texture(u_tex2, v_uv);
+  vec4 t3 = texture(u_tex3, v_uv);
+  vec4 c;
+  if (u_count > 3.5)      { c = t3; c = blend(c, t2); c = blend(c, t1); c = blend(c, t0); }
+  else if (u_count > 2.5) { c = t2; c = blend(c, t1); c = blend(c, t0); }
+  else if (u_count > 1.5) { c = t1; c = blend(c, t0); }
+  else                    { c = t0; }
   fragColor = c;
 }
 `;
