@@ -97,12 +97,12 @@ const CSS = `
 .wt-stub.wt-in { left:-5px; }
 
 /* ── Side ────────────────────────────────────────────────────── */
-.wt-side { grid-area:side; display:grid; grid-template-rows:auto 1fr;
+.wt-side { grid-area:side; display:flex; flex-direction:column;
   min-height:0; border-left:1px solid #2a2a30; background:#18181e; }
 
 /* ── Viewer ──────────────────────────────────────────────────── */
-.wt-viewer { position:relative; background:#0e0e12; aspect-ratio:16/9;
-  border-bottom:1px solid #2a2a30; }
+.wt-viewer { position:relative; background:#0e0e12; border-bottom:1px solid #2a2a30;
+  flex:none; height:200px; }
 .wt-viewer canvas.wt-gl { position:absolute; inset:0; width:100%; height:100%; }
 .wt-viewer canvas.wt-scope { position:absolute; inset:0; width:100%; height:100%; }
 .wt-viewer pre.wt-dattext { position:absolute; inset:0; margin:0; padding:10px;
@@ -124,7 +124,7 @@ const CSS = `
 }
 
 /* ── Params ──────────────────────────────────────────────────── */
-.wt-params { overflow-y:auto; min-height:0; padding-bottom:10px; }
+.wt-params { overflow-y:auto; min-height:0; padding-bottom:10px; flex:1; }
 .wt-params::-webkit-scrollbar { width:4px; }
 .wt-params::-webkit-scrollbar-track { background:transparent; }
 .wt-params::-webkit-scrollbar-thumb { background:#2a2a34; border-radius:2px; }
