@@ -196,8 +196,8 @@ export class NetworkView {
     flag.title = 'display flag (d)';
     el.append(label, typ, err, flag);
 
-    // stubs
-    const inCount = Math.min(spec.inputs.max, 4);
+    // stubs (containers expose one input per in-tunnel child)
+    const inCount = Math.min(spec.isContainer ? this.engine.graph.inputCapacity(n) : spec.inputs.max, 4);
     for (let i = 0; i < inCount; i++) {
       const stub = document.createElement('div');
       stub.className = 'wt-stub wt-in';

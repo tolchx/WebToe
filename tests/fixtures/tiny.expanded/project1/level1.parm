@@ -1,0 +1,4 @@
+?
+brightness1 17 1 math.sin(absTime.seconds)*0.5+1
+opacity 0 0.9
+?

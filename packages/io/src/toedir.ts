@@ -50,6 +50,9 @@ const TYPE_MAP: Record<string, string> = {
   'TOP:videodevin': 'top:camerain',
   'TOP:null': 'top:null',
   'TOP:out': 'top:out',
+  'TOP:in': 'top:in',
+  'CHOP:in': 'chop:in',
+  'CHOP:out': 'chop:out',
   'CHOP:lfo': 'chop:lfo',
   'CHOP:noise': 'chop:noise',
   'CHOP:math': 'chop:math',
@@ -302,6 +305,10 @@ export const toedirLoader: ProjectLoader = {
         const params: Record<string, ParamValueJSON> = {};
         for (const [k, v] of Object.entries(TYPE_PRESETS[raw.tdType] ?? {})) {
           params[k] = { mode: 'const', value: v };
+        }
+        if (type === 'top:in' || type === 'chop:in') {
+          const digits = raw.name.match(/^in(\d+)$/);
+          if (digits) params.index = { mode: 'const', value: Number(digits[1]) - 1 };
         }
         const rules = PARAM_MAP[raw.tdType] ?? {};
         const colorAcc: Record<string, number[]> = {};

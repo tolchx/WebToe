@@ -1,0 +1,9 @@
+TOP:comp
+tile 800 400 130 90
+flags =  viewer 1 parlanguage 0
+inputs
+{
+0 	inner1
+1 	noise1
+}
+end

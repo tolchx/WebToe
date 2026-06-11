@@ -507,6 +507,23 @@ export const topOps: OpSpec[] = [
   },
 
   {
+    type: 'top:in',
+    family: F,
+    label: 'in',
+    inputs: { min: 0, max: 0 },
+    alwaysCook: true,
+    params: [{ key: 'index', type: 'int', default: 0, min: 0, max: 7 }],
+    backends: ['webgl2', 'webgpu'],
+    cook(ctx) {
+      // tunnel: pull the parent COMP's wired external input
+      const parent = ctx.node.parent;
+      const ext = parent?.inputs[Math.max(0, Math.round(ctx.paramNum('index')))];
+      if (!ext) return null;
+      return asTop(ctx.engine.cook(ext));
+    },
+  },
+
+  {
     type: 'top:out',
     family: F,
     label: 'out',

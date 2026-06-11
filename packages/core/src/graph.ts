@@ -50,15 +50,31 @@ export class Graph {
     p.children.set(unique, node);
   }
 
-  /** Wire src's output into dst.inputs[index]. Same-family only. */
+  /** Wire src's output into dst.inputs[index]. Same-family only, except across
+   *  COMP boundaries (in/out tunnel children resolve the family at cook time). */
   connect(src: NodeInst, dst: NodeInst, index = 0): void {
-    const sf = getOp(src.type).family;
+    const sSpec = getOp(src.type);
     const dSpec = getOp(dst.type);
-    if (sf !== dSpec.family) throw new Error(`family mismatch: ${sf} → ${dSpec.family}`);
+    const boundary = sSpec.family === 'COMP' || dSpec.family === 'COMP';
+    if (!boundary && sSpec.family !== dSpec.family) {
+      throw new Error(`family mismatch: ${sSpec.family} → ${dSpec.family}`);
+    }
     if (src === dst) throw new Error('cannot wire node to itself');
-    if (index < 0 || index >= dSpec.inputs.max) throw new Error(`input index ${index} out of range for ${dst.type}`);
+    const cap = this.inputCapacity(dst);
+    if (index < 0 || index >= cap) throw new Error(`input index ${index} out of range for ${dst.type}`);
     while (dst.inputs.length <= index) dst.inputs.push(null);
     dst.inputs[index] = src;
+  }
+
+  /** Effective wired-input capacity: containers expose one slot per in-tunnel
+   *  child (min 1 so freshly created COMPs can be wired before adding tunnels). */
+  inputCapacity(node: NodeInst): number {
+    const spec = getOp(node.type);
+    if (!spec.isContainer) return spec.inputs.max;
+    const ins = node.children
+      ? [...node.children.values()].filter((c) => c.type === 'top:in' || c.type === 'chop:in').length
+      : 0;
+    return Math.max(ins, 1);
   }
 
   disconnect(dst: NodeInst, index: number): void {

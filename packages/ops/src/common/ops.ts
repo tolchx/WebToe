@@ -7,14 +7,17 @@ export const commonOps: OpSpec[] = [
     type: 'comp:container',
     family: 'COMP',
     label: 'container',
-    inputs: { min: 0, max: 0 },
+    inputs: { min: 0, max: 8 },
     params: [],
     isContainer: true,
     cook(ctx) {
-      // COMP output = its display-flagged child's output (if any); cooked on demand
+      // COMP output: its out-tunnel child if present, else the display child
       const kids = ctx.node.children ? [...ctx.node.children.values()] : [];
-      const display = kids.find((k) => k.flags.display);
-      return display ? ctx.engine.cook(display) : null;
+      const outs = kids
+        .filter((k) => k.type === 'top:out' || k.type === 'chop:out')
+        .sort((a, b) => a.name.localeCompare(b.name, undefined, { numeric: true }));
+      const target = outs[0] ?? kids.find((k) => k.flags.display);
+      return target ? ctx.engine.cook(target) : null;
     },
   },
 

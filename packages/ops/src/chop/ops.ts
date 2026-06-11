@@ -192,4 +192,30 @@ export const chopOps: OpSpec[] = [
       ]);
     },
   },
+
+  {
+    type: 'chop:in',
+    family: F,
+    label: 'in',
+    inputs: { min: 0, max: 0 },
+    alwaysCook: true,
+    params: [{ key: 'index', type: 'int', default: 0, min: 0, max: 7 }],
+    cook(ctx) {
+      const parent = ctx.node.parent;
+      const ext = parent?.inputs[Math.max(0, Math.round(ctx.paramNum('index')))];
+      if (!ext) return channels([]);
+      return asChop(ctx.engine.cook(ext)) ?? channels([]);
+    },
+  },
+
+  {
+    type: 'chop:out',
+    family: F,
+    label: 'out',
+    inputs: { min: 1, max: 1 },
+    params: [],
+    cook(ctx) {
+      return asChop(ctx.inputs[0]);
+    },
+  },
 ];

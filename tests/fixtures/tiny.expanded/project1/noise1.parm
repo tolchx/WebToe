@@ -1,0 +1,5 @@
+?
+period 0 0.45
+harmon 0 4
+tz 17 0 absTime.seconds*0.2
+?

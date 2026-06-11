@@ -1,0 +1,8 @@
+COMP:base
+tile 600 400 160 130
+flags =  viewer 1 parlanguage 0
+inputs
+{
+0 	mirror1
+}
+end

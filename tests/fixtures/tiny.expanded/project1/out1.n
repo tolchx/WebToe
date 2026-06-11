@@ -1,0 +1,8 @@
+TOP:out
+tile 1000 400 130 90
+flags =  viewer 1 display on parlanguage 0
+inputs
+{
+0 	comp1
+}
+end

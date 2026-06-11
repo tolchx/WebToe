@@ -1,0 +1,8 @@
+TOP:mirror
+tile 400 400 130 90
+flags =  viewer 1 parlanguage 0
+inputs
+{
+0 	level1
+}
+end

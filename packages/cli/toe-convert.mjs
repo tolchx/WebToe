@@ -49,6 +49,7 @@ const TYPE_MAP = {
   'TOP:add': 'top:composite', 'TOP:multiply': 'top:composite', 'TOP:displace': 'top:displace',
   'TOP:edge': 'top:edge', 'TOP:feedback': 'top:feedback', 'TOP:moviefilein': 'top:imagein',
   'TOP:videodevin': 'top:camerain', 'TOP:null': 'top:null', 'TOP:out': 'top:out',
+  'TOP:in': 'top:in', 'CHOP:in': 'chop:in', 'CHOP:out': 'chop:out',
   'CHOP:lfo': 'chop:lfo', 'CHOP:noise': 'chop:noise', 'CHOP:math': 'chop:math',
   'CHOP:lag': 'chop:lag', 'CHOP:constant': 'chop:constant', 'CHOP:mousein': 'chop:mousein',
   'CHOP:merge': 'chop:merge', 'CHOP:select': 'chop:select',

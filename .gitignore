@@ -7,3 +7,5 @@ dist/
 *.toe.dir/
 *.tox.dir/
 *.toc
+# committed original test fixture (see tests/fixtures/README.md)
+!tests/fixtures/tiny.toe
