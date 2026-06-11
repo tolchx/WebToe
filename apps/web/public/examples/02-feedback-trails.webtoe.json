@@ -1,0 +1,38 @@
+{
+  "app": "webtoe",
+  "version": 1,
+  "root": {
+    "nodes": [
+      { "name": "mouse1", "type": "chop:mousein", "family": "CHOP", "pos": [40, 250] },
+      { "name": "rect1", "type": "top:rectangle", "family": "TOP", "pos": [40, 40],
+        "params": { "sizex": { "mode": "const", "value": 0.1 },
+                    "sizey": { "mode": "const", "value": 0.1 },
+                    "softness": { "mode": "const", "value": 0.06 },
+                    "color": { "mode": "const", "value": [1, 0.62, 0.25, 1] },
+                    "bgcolor": { "mode": "const", "value": [0, 0, 0, 0] } } },
+      { "name": "trans1", "type": "top:transform", "family": "TOP", "pos": [230, 40],
+        "params": { "tx": { "mode": "expr", "value": 0, "expr": "0.5 - op('mouse1')['tx']" },
+                    "ty": { "mode": "expr", "value": 0, "expr": "0.5 - op('mouse1')['ty']" },
+                    "extend": { "mode": "const", "value": "zero" } } },
+      { "name": "feed1", "type": "top:feedback", "family": "TOP", "pos": [230, 330] },
+      { "name": "fade1", "type": "top:level", "family": "TOP", "pos": [420, 330],
+        "params": { "opacity": { "mode": "const", "value": 0.97 },
+                    "brightness": { "mode": "const", "value": 0.99 } } },
+      { "name": "comp1", "type": "top:composite", "family": "TOP", "pos": [430, 40],
+        "params": { "operation": { "mode": "const", "value": "over" } } },
+      { "name": "blur1", "type": "top:blur", "family": "TOP", "pos": [620, 40],
+        "params": { "size": { "mode": "const", "value": 1.5 } } },
+      { "name": "out1", "type": "top:out", "family": "TOP", "pos": [800, 40], "flags": { "display": true } }
+    ],
+    "wires": [
+      { "from": "rect1:0", "to": "trans1:0" },
+      { "from": "fade1:0", "to": "comp1:0" },
+      { "from": "trans1:0", "to": "comp1:1" },
+      { "from": "comp1:0", "to": "feed1:0" },
+      { "from": "feed1:0", "to": "fade1:0" },
+      { "from": "comp1:0", "to": "blur1:0" },
+      { "from": "blur1:0", "to": "out1:0" }
+    ]
+  },
+  "meta": { "title": "feedback trails", "comment": "move the mouse over the viewer — a feedback loop with a fading level leaves trails" }
+}

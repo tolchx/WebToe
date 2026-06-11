@@ -481,7 +481,16 @@ export const topOps: OpSpec[] = [
       const src = ctx.node.inputs[0];
       if (!src) return null;
       const prev = ctx.gpu!.previousFrame(src);
-      return prev ? { kind: 'top', tex: prev } : null;
+      if (prev) return { kind: 'top', tex: prev };
+      // first frame: emit transparent black so downstream chains start clean
+      ctx.gpu!.registerShader('top:feedback:seed', { glsl: glsl.constantGlsl });
+      const tex = ctx.gpu!.runPass(ctx.node, {
+        shaderId: 'top:feedback:seed',
+        uniforms: { u_color: [0, 0, 0, 0] },
+        inputs: [],
+        output: { width: DEFAULT_RES[0], height: DEFAULT_RES[1] },
+      });
+      return { kind: 'top', tex };
     },
   },
 

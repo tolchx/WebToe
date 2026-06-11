@@ -1,0 +1,36 @@
+{
+  "app": "webtoe",
+  "version": 1,
+  "root": {
+    "nodes": [
+      { "name": "lfo1", "type": "chop:lfo", "family": "CHOP", "pos": [40, 40],
+        "params": { "frequency": { "mode": "const", "value": 0.3 } } },
+      { "name": "wob1", "type": "chop:noise", "family": "CHOP", "pos": [40, 110],
+        "params": { "period": { "mode": "const", "value": 2.5 }, "amplitude": { "mode": "const", "value": 0.6 } } },
+      { "name": "math1", "type": "chop:math", "family": "CHOP", "pos": [230, 70],
+        "params": { "combine": { "mode": "const", "value": "add" } } },
+      { "name": "lag1", "type": "chop:lag", "family": "CHOP", "pos": [420, 70],
+        "params": { "lagup": { "mode": "const", "value": 0.4 }, "lagdown": { "mode": "const", "value": 0.4 } } },
+      { "name": "merge1", "type": "chop:merge", "family": "CHOP", "pos": [420, 180], "flags": { "display": true } },
+
+      { "name": "ramp1", "type": "top:ramp", "family": "TOP", "pos": [40, 300],
+        "params": { "type": { "mode": "const", "value": "linear" },
+                    "colora": { "mode": "const", "value": [0.15, 0.1, 0.5, 1] },
+                    "colorb": { "mode": "const", "value": [0.95, 0.55, 0.2, 1] } } },
+      { "name": "trans1", "type": "top:transform", "family": "TOP", "pos": [230, 300],
+        "params": { "rotate": { "mode": "expr", "value": 0, "expr": "op('lag1')['chan1'] * 90" },
+                    "extend": { "mode": "const", "value": "mirror" } } },
+      { "name": "out1", "type": "top:out", "family": "TOP", "pos": [430, 300] }
+    ],
+    "wires": [
+      { "from": "lfo1:0", "to": "math1:0" },
+      { "from": "wob1:0", "to": "math1:1" },
+      { "from": "math1:0", "to": "lag1:0" },
+      { "from": "lfo1:0", "to": "merge1:0" },
+      { "from": "lag1:0", "to": "merge1:1" },
+      { "from": "ramp1:0", "to": "trans1:0" },
+      { "from": "trans1:0", "to": "out1:0" }
+    ]
+  },
+  "meta": { "title": "chop playground", "comment": "select merge1 to scope the channels; the lagged sum rotates the ramp" }
+}

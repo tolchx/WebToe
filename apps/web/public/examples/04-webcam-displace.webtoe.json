@@ -1,0 +1,30 @@
+{
+  "app": "webtoe",
+  "version": 1,
+  "root": {
+    "nodes": [
+      { "name": "cam1", "type": "top:camerain", "family": "TOP", "pos": [40, 40] },
+      { "name": "noisemap1", "type": "top:noise", "family": "TOP", "pos": [40, 200],
+        "params": { "period": { "mode": "const", "value": 0.6 },
+                    "speed": { "mode": "const", "value": 0.35 },
+                    "harmonics": { "mode": "const", "value": 2 },
+                    "mono": { "mode": "const", "value": false } } },
+      { "name": "displace1", "type": "top:displace", "family": "TOP", "pos": [260, 40],
+        "params": { "weight": { "mode": "expr", "value": 0.08, "expr": "0.04 + op('wob1')['chan1'] * 0.04" } } },
+      { "name": "edge1", "type": "top:edge", "family": "TOP", "pos": [470, 40],
+        "params": { "strength": { "mode": "const", "value": 5 },
+                    "compinput": { "mode": "const", "value": true },
+                    "edgecolor": { "mode": "const", "value": [0.4, 1, 0.8, 1] } } },
+      { "name": "out1", "type": "top:out", "family": "TOP", "pos": [670, 40], "flags": { "display": true } },
+      { "name": "wob1", "type": "chop:lfo", "family": "CHOP", "pos": [40, 360],
+        "params": { "frequency": { "mode": "const", "value": 0.2 } } }
+    ],
+    "wires": [
+      { "from": "cam1:0", "to": "displace1:0" },
+      { "from": "noisemap1:0", "to": "displace1:1" },
+      { "from": "displace1:0", "to": "edge1:0" },
+      { "from": "edge1:0", "to": "out1:0" }
+    ]
+  },
+  "meta": { "title": "webcam displace", "comment": "webcam displaced by animated noise with edge overlay — allow camera access; without a camera a placeholder shows" }
+}

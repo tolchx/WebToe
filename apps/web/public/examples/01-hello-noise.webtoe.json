@@ -1,0 +1,22 @@
+{
+  "app": "webtoe",
+  "version": 1,
+  "root": {
+    "nodes": [
+      { "name": "noise1", "type": "top:noise", "family": "TOP", "pos": [40, 40],
+        "params": { "period": { "mode": "const", "value": 0.45 }, "speed": { "mode": "const", "value": 0.3 } } },
+      { "name": "level1", "type": "top:level", "family": "TOP", "pos": [240, 40],
+        "params": { "brightness": { "mode": "expr", "value": 1, "expr": "op('lfo1')['chan1']" } } },
+      { "name": "out1", "type": "top:out", "family": "TOP", "pos": [440, 40], "flags": { "display": true } },
+      { "name": "lfo1", "type": "chop:lfo", "family": "CHOP", "pos": [40, 210],
+        "params": { "frequency": { "mode": "const", "value": 0.4 },
+                    "amplitude": { "mode": "const", "value": 0.5 },
+                    "offset": { "mode": "const", "value": 0.9 } } }
+    ],
+    "wires": [
+      { "from": "noise1:0", "to": "level1:0" },
+      { "from": "level1:0", "to": "out1:0" }
+    ]
+  },
+  "meta": { "title": "hello noise", "comment": "animated fBm noise; an LFO drives level brightness through an expression" }
+}
