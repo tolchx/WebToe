@@ -14,6 +14,7 @@ app.style.cssText = 'position:fixed;inset:0;';
 
 
 const editorPromise = mountEditor(app, {
+  bridgeUrl: 'http://localhost:3001',
   examples: [
     { name: '01 hello noise', url: `${base}examples/01-hello-noise.webtoe.json` },
     { name: '02 feedback trails', url: `${base}examples/02-feedback-trails.webtoe.json` },
@@ -25,6 +26,11 @@ const editorPromise = mountEditor(app, {
     { name: '08 sketch: chop study (2022, imported)', url: `${base}examples/08-sketch-chop-study.webtoe.json` },
     { name: '09 showcase (camera + everything)', url: `${base}examples/09-showcase.webtoe.json` },
     { name: '10 3d lines (SOPs + render)', url: `${base}examples/10-3d-lines.webtoe.json` },
+    { name: '11 particle showcase (AI)', url: `${base}examples/11-particle-showcase.webtoe.json` },
+    { name: '12 GLSL deformation (AI)', url: `${base}examples/12-glsl-deformation.webtoe.json` },
+    { name: '13 feedback + LFO (AI)', url: `${base}examples/13-feedback-lfo.webtoe.json` },
+    { name: '14 boids flocking (AI)', url: `${base}examples/14-boids-flocking.webtoe.json` },
+    { name: '15 3D instanced (AI)', url: `${base}examples/15-3d-instanced.webtoe.json` },
   ],
 });
 

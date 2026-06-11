@@ -8,6 +8,7 @@ import { NetworkView } from './network';
 import { ParamPanel } from './params';
 import { Viewer } from './viewer';
 import { previewSpec } from './preview3d';
+import { AiChatPanel } from './aiChat';
 
 export interface EditorOptions {
   /** examples shown in the toolbar menu */
@@ -18,6 +19,8 @@ export interface EditorOptions {
   starterPatch?: boolean;
   /** repository link for the toolbar icon */
   repoUrl?: string;
+  /** WebToe MCP Bridge URL for AI chat (e.g. http://localhost:3001) */
+  bridgeUrl?: string;
 }
 
 export class EditorApp {
@@ -156,6 +159,10 @@ export class EditorApp {
     this.viewer.fit();
     fitCompositor();
     this.bindDropIntake(root);
+    // AI Chat Panel (Ctrl+Shift+A) — conecta al WebToe MCP Bridge
+    if (this.opts.bridgeUrl) {
+      new AiChatPanel(this, { bridgeUrl: this.opts.bridgeUrl });
+    }
     this.loop();
   }
 
