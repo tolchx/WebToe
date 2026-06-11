@@ -65,7 +65,7 @@ Plus per-family stub operators used by the importer. Expressions ship with `time
 
 ## Examples
 
-Eight bundled projects load from the toolbar and run out of the box — five authored for WebToe: **hello noise** (expression-driven brightness), **feedback trails** (move your mouse over the viewer), **lfo garden** (additive ramp chains with hue drift), **webcam displace** (allow camera access; degrades gracefully without one), **chop playground** (select `merge1` to scope raw vs lagged channels) — and three **real 2022 TouchDesigner daily sketches imported through the `.toe` pipeline** (pseudo-voronoi, fractal feedback, and a mouse-interactive CHOP study; lightly adapted for the web, e.g. movie sources swapped for noise).
+Nine bundled projects load from the toolbar and run out of the box. The flagship is **09 showcase** — 27 nodes exercising every family at once: a webcam layer through edge detection, a kaleidoscope COMP with in/out tunnels, a mouse-position source switch, noise displacement, hue-drifting feedback trails, and a full CHOP rig (lag, speed integrator, parameter reader, full math pipeline) driving it through eight live expressions. The rest: — five authored for WebToe: **hello noise** (expression-driven brightness), **feedback trails** (move your mouse over the viewer), **lfo garden** (additive ramp chains with hue drift), **webcam displace** (allow camera access; degrades gracefully without one), **chop playground** (select `merge1` to scope raw vs lagged channels) — and three **real 2022 TouchDesigner daily sketches imported through the `.toe` pipeline** (pseudo-voronoi, fractal feedback, and a mouse-interactive CHOP study; lightly adapted for the web, e.g. movie sources swapped for noise).
 
 ## Quick start (development)
 
@@ -94,7 +94,7 @@ Deep dives: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · execution contract &
 
 ## Roadmap — measured against real work
 
-To define "complete", we analyzed **60 real TouchDesigner projects (28,698 nodes, 2022–2026)** from a daily-practice generative art portfolio and ranked what actually blocks them: the 3D pipeline (geo/render/SOP/MAT — in ~46 of 60 projects), routing TOPs, `parent().par` expressions, GLSL TOPs, the POP particle family, and replicator/table data. The phased plan with all the numbers: **[docs/ROADMAP.md](docs/ROADMAP.md)**. Current corpus coverage is 32.3% of nodes runnable; each phase has a measured target.
+To define "complete", we analyzed **60 real TouchDesigner projects (28,698 nodes, 2022–2026)** from a daily-practice generative art portfolio and crawled the **official operator inventory (~675 operators across 7 families)**. Two documents drive the evolution: **[docs/ROADMAP.md](docs/ROADMAP.md)** (phased plan with measured results — corpus coverage went 32.3% → 47.1% in the first cycle) and **[docs/TD-PARITY.md](docs/TD-PARITY.md)** (the full parity charter: per-family op tiers, portable vs web-equivalent vs native-only classification, and the engine-concept gaps — time slicing, audio, 3D, GLSL, POPs, panels — with the standing measure→pick→implement→verify loop).
 
 ## Disclaimer
 

@@ -88,9 +88,14 @@ Append-only build log. Protocol: every work chunk gets an entry — timestamp, w
 - **GitHub link** (octocat icon) in the toolbar → repo (configurable via `EditorOptions.repoUrl`).
 - Browser-verified: modal renders + copies, drop-load of a synthetic project works, param pages render, tooltips correct, zero errors.
 
+## 2026-06-11 — TD parity charter + flagship showcase example
+
+- **docs/TD-PARITY.md**: crawled the official docs.derivative.ca operator categories (TOP ~147, CHOP 172, SOP 115, DAT 77, MAT 13, COMP 45, POP 106 ≈ 675 ops) and wrote the full "evolve toward TD" charter — portable/web-equivalent/native-only classification, per-family tier targets cross-referenced with corpus usage, engine-concept gap table (multi-sample+time-sliced CHOPs as the audio prerequisite, WebAudio bundle, 3D R3, GLSL R4, POP compute R5, parameter-system depth incl. pulse/bind/custom COMP pars, panels R7, perform-mode-as-route, timeline/keyframes, JS-callback-DAT as the Python-boundary answer), and the standing measure→pick→implement→verify→record loop.
+- **09 showcase example**: 27 nodes / 25 distinct op types across all four families — camera→flip→edge (graceful placeholder headless), circular-ramp kaleidoscope COMP (in/out tunnels, ± speed-integrator rotation, difference mix), color-noise + hue drift, mouse-thirds source switch, reorder-remixed noise displacement, hue-drifting feedback trails, math-TOP pulse, CHOP rig (mousein→select→lag, lfo×2, speed, par reader, full-pipeline math, merge scope), DAT notes. Verified: switch follows mouse thirds (index 0/1/2), speed integrates, output non-black, zero node errors.
+
 ## NEXT
 
-Backlog (v2 — full detail and measured targets in docs/ROADMAP.md):
+Backlog (v2 — full detail and measured targets in docs/ROADMAP.md, full parity map in docs/TD-PARITY.md):
 1. M8 compute particle family (POPs spirit) + audio-rate CHOPs (wasm decision per PLAN §5 benchmark gate).
 2. Importer round 3: cross-network wire resolution, raw-.toe drop explainer modal, more TYPE_MAP/PARAM_MAP entries driven by real import-report histograms, media relink-by-drop flow.
 3. Editor round 2: marquee select, undo/redo, node rename UI, COMP display-child preview thumbs, mobile/touch pan-zoom.

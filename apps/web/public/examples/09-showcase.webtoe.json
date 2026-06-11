@@ -1,0 +1,136 @@
+{
+ "app": "webtoe",
+ "version": 1,
+ "root": {
+  "nodes": [
+   { "name": "notes1", "type": "dat:text", "family": "DAT", "pos": [40, 640],
+     "text": "WEBTOE SHOWCASE\n\nmove the mouse over the viewer:\n  x — switches the source (camera / kaleido / noise)\n  y — displacement amount\n\nthe camera layer needs webcam permission; without it a placeholder shows.\nfeedback trails drift hue over time. 25 operator types, every family,\nCOMP tunneling, and 8 live expressions are at work here." },
+
+   { "name": "mouse1", "type": "chop:mousein", "family": "CHOP", "pos": [40, 460] },
+   { "name": "pick1", "type": "chop:select", "family": "CHOP", "pos": [210, 460],
+     "params": { "channames": { "mode": "const", "value": "tx ty" } } },
+   { "name": "mouse_smooth", "type": "chop:lag", "family": "CHOP", "pos": [380, 460],
+     "params": { "lagup": { "mode": "const", "value": 0.35 }, "lagdown": { "mode": "const", "value": 0.35 } } },
+   { "name": "energy1", "type": "chop:math", "family": "CHOP", "pos": [550, 460],
+     "params": { "chanop": { "mode": "const", "value": "add" },
+                 "gain": { "mode": "const", "value": 0.5 } } },
+   { "name": "lfo_pulse", "type": "chop:lfo", "family": "CHOP", "pos": [40, 540],
+     "params": { "frequency": { "mode": "const", "value": 0.5 },
+                 "amplitude": { "mode": "const", "value": 0.5 },
+                 "offset": { "mode": "const", "value": 0.5 } } },
+   { "name": "lfo_drive", "type": "chop:lfo", "family": "CHOP", "pos": [210, 540],
+     "params": { "wave": { "mode": "const", "value": "square" },
+                 "frequency": { "mode": "const", "value": 0.1 } } },
+   { "name": "speed1", "type": "chop:speed", "family": "CHOP", "pos": [380, 540],
+     "params": { "rate": { "mode": "const", "value": 18 } } },
+   { "name": "par1", "type": "chop:par", "family": "CHOP", "pos": [550, 540],
+     "params": { "oppath": { "mode": "const", "value": "lfo_pulse" },
+                 "parnames": { "mode": "const", "value": "frequency amplitude" } } },
+   { "name": "scope1", "type": "chop:merge", "family": "CHOP", "pos": [720, 500] },
+
+   { "name": "cam1", "type": "top:camerain", "family": "TOP", "pos": [40, 40] },
+   { "name": "flip1", "type": "top:flip", "family": "TOP", "pos": [210, 40],
+     "params": { "flipx": { "mode": "const", "value": true } } },
+   { "name": "edge1", "type": "top:edge", "family": "TOP", "pos": [380, 40],
+     "params": { "compinput": { "mode": "const", "value": true },
+                 "edgecolor": { "mode": "const", "value": [0.5, 1, 0.85, 1] },
+                 "strength": { "mode": "expr", "value": 4, "expr": "2 + op('energy1')['tx'] * 6" } } },
+
+   { "name": "ramp1", "type": "top:ramp", "family": "TOP", "pos": [40, 150],
+     "params": { "type": { "mode": "const", "value": "circular" },
+                 "colora": { "mode": "const", "value": [0.95, 0.45, 0.2, 1] },
+                 "colorb": { "mode": "const", "value": [0.1, 0.05, 0.3, 1] },
+                 "phase": { "mode": "expr", "value": 0, "expr": "fract(time.seconds * 0.04)" } } },
+   { "name": "kaleido", "type": "comp:container", "family": "COMP", "pos": [240, 150],
+     "children": [
+      { "name": "in1", "type": "top:in", "family": "TOP", "pos": [40, 40] },
+      { "name": "spin_a", "type": "top:transform", "family": "TOP", "pos": [220, 40],
+        "params": { "rotate": { "mode": "expr", "value": 0, "expr": "op('../speed1')['chan1']" },
+                    "extend": { "mode": "const", "value": "mirror" },
+                    "sx": { "mode": "const", "value": 1.6 }, "sy": { "mode": "const", "value": 1.6 } } },
+      { "name": "spin_b", "type": "top:transform", "family": "TOP", "pos": [220, 150],
+        "params": { "rotate": { "mode": "expr", "value": 0, "expr": "-op('../speed1')['chan1'] * 1.5" },
+                    "extend": { "mode": "const", "value": "mirror" },
+                    "sx": { "mode": "const", "value": 2.4 }, "sy": { "mode": "const", "value": 2.4 } } },
+      { "name": "mix1", "type": "top:composite", "family": "TOP", "pos": [410, 90],
+        "params": { "operation": { "mode": "const", "value": "difference" } } },
+      { "name": "out1", "type": "top:out", "family": "TOP", "pos": [580, 90] }
+     ],
+     "wires": [
+      { "from": "in1:0", "to": "spin_a:0" },
+      { "from": "in1:0", "to": "spin_b:0" },
+      { "from": "spin_a:0", "to": "mix1:0" },
+      { "from": "spin_b:0", "to": "mix1:1" },
+      { "from": "mix1:0", "to": "out1:0" }
+     ] },
+
+   { "name": "noise_color", "type": "top:noise", "family": "TOP", "pos": [40, 260],
+     "params": { "mono": { "mode": "const", "value": false },
+                 "period": { "mode": "const", "value": 0.6 },
+                 "speed": { "mode": "const", "value": 0.3 },
+                 "harmonics": { "mode": "const", "value": 2 } } },
+   { "name": "hue_drift", "type": "top:hsvadjust", "family": "TOP", "pos": [240, 260],
+     "params": { "hueoffset": { "mode": "expr", "value": 0, "expr": "fract(time.seconds * 0.03)" },
+                 "satmult": { "mode": "const", "value": 1.3 } } },
+
+   { "name": "source_switch", "type": "top:switch", "family": "TOP", "pos": [560, 150],
+     "params": { "index": { "mode": "expr", "value": 0, "expr": "clamp(trunc(op('mouse_smooth')['tx'] * 3), 0, 2)" } } },
+
+   { "name": "noise_map", "type": "top:noise", "family": "TOP", "pos": [560, 260],
+     "params": { "mono": { "mode": "const", "value": false },
+                 "period": { "mode": "const", "value": 0.9 },
+                 "speed": { "mode": "const", "value": 0.18 } } },
+   { "name": "map_mix", "type": "top:reorder", "family": "TOP", "pos": [730, 260],
+     "params": { "outr": { "mode": "const", "value": "g" },
+                 "outg": { "mode": "const", "value": "b" } } },
+   { "name": "warp1", "type": "top:displace", "family": "TOP", "pos": [740, 150],
+     "params": { "weight": { "mode": "expr", "value": 0.05, "expr": "0.02 + op('mouse_smooth')['ty'] * 0.12" } } },
+
+   { "name": "feed1", "type": "top:feedback", "family": "TOP", "pos": [740, 360] },
+   { "name": "fade1", "type": "top:level", "family": "TOP", "pos": [910, 360],
+     "params": { "opacity": { "mode": "const", "value": 0.95 },
+                 "brightness": { "mode": "const", "value": 0.985 } } },
+   { "name": "trail_hue", "type": "top:hsvadjust", "family": "TOP", "pos": [1080, 360],
+     "params": { "hueoffset": { "mode": "const", "value": 0.012 } } },
+   { "name": "comp_main", "type": "top:composite", "family": "TOP", "pos": [930, 150],
+     "params": { "operation": { "mode": "const", "value": "over" } } },
+   { "name": "post1", "type": "top:math", "family": "TOP", "pos": [1100, 150],
+     "params": { "gain": { "mode": "expr", "value": 1, "expr": "0.85 + op('lfo_pulse')['chan1'] * 0.25" } } },
+   { "name": "out1", "type": "top:out", "family": "TOP", "pos": [1270, 150], "flags": { "display": true } }
+  ],
+  "wires": [
+   { "from": "mouse1:0", "to": "pick1:0" },
+   { "from": "pick1:0", "to": "mouse_smooth:0" },
+   { "from": "mouse_smooth:0", "to": "energy1:0" },
+   { "from": "lfo_drive:0", "to": "speed1:0" },
+   { "from": "mouse_smooth:0", "to": "scope1:0" },
+   { "from": "lfo_pulse:0", "to": "scope1:1" },
+   { "from": "par1:0", "to": "scope1:2" },
+
+   { "from": "cam1:0", "to": "flip1:0" },
+   { "from": "flip1:0", "to": "edge1:0" },
+   { "from": "ramp1:0", "to": "kaleido:0" },
+
+   { "from": "edge1:0", "to": "source_switch:0" },
+   { "from": "kaleido:0", "to": "source_switch:1" },
+   { "from": "hue_drift:0", "to": "source_switch:2" },
+   { "from": "noise_color:0", "to": "hue_drift:0" },
+
+   { "from": "noise_map:0", "to": "map_mix:0" },
+   { "from": "source_switch:0", "to": "warp1:0" },
+   { "from": "map_mix:0", "to": "warp1:1" },
+
+   { "from": "comp_main:0", "to": "feed1:0" },
+   { "from": "feed1:0", "to": "fade1:0" },
+   { "from": "fade1:0", "to": "trail_hue:0" },
+   { "from": "warp1:0", "to": "comp_main:0" },
+   { "from": "trail_hue:0", "to": "comp_main:1" },
+   { "from": "comp_main:0", "to": "post1:0" },
+   { "from": "post1:0", "to": "out1:0" }
+  ]
+ },
+ "meta": {
+  "title": "showcase",
+  "comment": "every family at once: camera→edge, COMP kaleidoscope with tunnels, color noise, a mouse-driven source switch, displacement, hue-drifting feedback trails, and a CHOP rig (lag/speed/par/full math) driving it all through live expressions"
+ }
+}
