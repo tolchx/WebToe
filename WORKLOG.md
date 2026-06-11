@@ -42,6 +42,19 @@ Append-only build log. Protocol: every work chunk gets an entry — timestamp, w
 - `packages/cli/toe-convert.mjs`: locates the USER'S OWN toeexpand (mac bundle / win bin globs or --toeexpand), runs in tmpdir (tolerating toeexpand's nonzero-on-success exit), emits .webtoe.json structure. Never bundles Derivative binaries.
 - Evidence: 30/30 tests (synthetic-fixture importer suite: mapping, stubs+foreignType, wires, hierarchy, color gather, expression translate/inert, menus, report). REAL-WORLD test (local only, not committed): a 213-node production .toe imported 213/213 nodes (56 runnable after adding TD's `TOP:comp` token discovered in the report histogram; 157 stubs — POP/SOP-heavy project), then loaded in the browser: noise TOPs live-animating, ramp running, switch stub passing video through, layout/wires preserved, viewer rendering the imported network. CLI verified end-to-end on the same .toe.
 
+## 2026-06-11 — M6 ship
+
+- README (features, quickstart, op table, architecture summary, roadmap, trademark disclaimer), docs/ARCHITECTURE.md (layers, load-bearing contracts, backend matrix, decisions log incl. lessons: toeexpand exits nonzero on success; TD type tokens ≠ UI names e.g. Composite TOP = `comp`).
+- Production verified at **https://frank890417.github.io/WebToe/** — app serves (200), examples fetch, lfo-garden loads and renders end-to-end, all five thumbnails paint, viewer blits final output. Note for future debugging: headless/hidden tabs pause RAF — drive `__webtoe.loop()` manually when verifying via automation.
+- Bundle: 90 KB JS / 27.6 KB gzip, zero runtime dependencies. 30/30 tests, CI green per milestone.
+
+**v1 (M0–M6) COMPLETE.**
+
 ## NEXT
 
-M6 — polish + ship: README (features, quickstart, IP disclaimer, screenshots optional), docs/ARCHITECTURE.md (layer diagram + dependency rules + decisions), verify Pages deploy serves the app and examples at https://frank890417.github.io/WebToe/, final WORKLOG wrap. Post-v1 backlog: M7 WebGPU parity (incl. blit aspect-fit + async readback thumbs), M8 compute particles + audio-rate CHOPs (wasm gate), cross-network wire resolution, In/Out tunneling ops, raw-.toe drop explainer modal.
+Post-v1 backlog, in suggested order:
+1. M7 WebGPU parity: WGSL for remaining TOPs, blit aspect-fit letterbox, async-readback thumbnails, then flip backend preference for capable projects.
+2. M8 compute particle family (POPs spirit) + audio-rate CHOPs (wasm decision per PLAN §5 benchmark gate).
+3. Importer round 2: cross-network wire resolution, In/Out tunneling ops, raw-.toe drop explainer modal, more TYPE_MAP/PARAM_MAP entries driven by real import-report histograms, media relink-by-drop flow.
+4. Editor round 2: marquee select, undo/redo, node rename UI, COMP display-child preview thumbs, mobile/touch pan-zoom.
+5. Watch derivative.ca for the official JSON text format → add the second ProjectLoader (PLAN §3 adapter).
