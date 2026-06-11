@@ -40,7 +40,13 @@ export class AiChatPanel {
   private messages: ChatMessage[] = [];
   private loading = false;
   private bridgeUrl: string;
-  private maxHistory: number;
+  private maxHistory: string;
+  private modelProvider = 'bridge'; // 'bridge' | 'openai' | 'ollama'
+  private modelKey = ''; // API key for OpenAI
+  private ollamaUrl = 'http://127.0.0.1:11434';
+  private recognition: any = null; // SpeechRecognition
+  private listening = false;
+  private savedHistory: ChatMessage[][] = [];
 
   constructor(
     private editorApp: any, // EditorApp instance
@@ -75,14 +81,28 @@ export class AiChatPanel {
       box-shadow: -4px 0 20px rgba(0,0,0,0.5);
     `;
 
-    // Header
+    // Header with model selector
     const header = document.createElement('div');
     header.style.cssText = `
-      padding: 12px 16px; background: #16213e;
+      padding: 8px 12px; background: #16213e;
       border-bottom: 1px solid #4a4a6a;
-      display: flex; justify-content: space-between; align-items: center;
+      display: flex; justify-content: space-between; align-items: center; gap: 6px;
     `;
-    header.innerHTML = `<span style="font-weight: 600; font-size: 14px;">🤖 WebToe AI</span>`;
+    header.innerHTML = `<span style="font-weight:600;font-size:13px;">🤖 WebToe AI</span>`;
+
+    const modelSel = document.createElement('select');
+    modelSel.style.cssText = 'background:#0f3460;color:#e0e0e0;border:1px solid #4a4a6a;border-radius:4px;padding:2px 6px;font-size:11px;';
+    modelSel.innerHTML = '<option value="bridge">Bridge MCP</option><option value="ollama">Ollama local</option>';
+    modelSel.addEventListener('change', () => { this.modelProvider = modelSel.value; });
+    header.appendChild(modelSel);
+
+    const micBtn = document.createElement('button');
+    micBtn.textContent = '🎤';
+    micBtn.title = 'Voice input (Speech-to-Text)';
+    micBtn.style.cssText = 'background:none;border:1px solid #4a4a6a;color:#888;border-radius:4px;cursor:pointer;font-size:14px;padding:2px 6px;';
+    micBtn.addEventListener('click', () => this.toggleVoice(micBtn));
+    header.appendChild(micBtn);
+
     const closeBtn = document.createElement('button');
     closeBtn.textContent = '✕';
     closeBtn.style.cssText = 'background:none;border:none;color:#888;cursor:pointer;font-size:18px;';
@@ -156,6 +176,45 @@ export class AiChatPanel {
     this.visible = false;
     this.container.style.right = `-${this.opts.width || 360}px`;
   }
+
+  // Speech-to-Text voice input
+  private toggleVoice(btn: HTMLButtonElement): void {
+    if (this.listening) {
+      this.listening = false;
+      btn.style.color = '#888';
+      btn.textContent = '🎤';
+      this.recognition?.stop();
+      return;
+    }
+    const SpeechRecognition = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecognition) {
+      this.addSystemMessage('⚠️ Speech recognition not supported in this browser.');
+      return;
+    }
+    this.recognition = new SpeechRecognition();
+    this.recognition.lang = 'es-ES'; // Spanish + English
+    this.recognition.continuous = false;
+    this.recognition.interimResults = false;
+    this.recognition.onresult = (e: any) => {
+      const transcript = e.results[0][0].transcript;
+      this.inputEl.value = transcript;
+      this.listening = false;
+      btn.style.color = '#888';
+      btn.textContent = '🎤';
+      this.send();
+    };
+    this.recognition.onerror = () => {
+      this.listening = false;
+      btn.style.color = '#888';
+      btn.textContent = '🎤';
+    };
+    this.listening = true;
+    btn.style.color = '#e94560';
+    btn.textContent = '🔴';
+    this.recognition.start();
+  }
+
+  // Persist chat history to localStorage
 
   private addSystemMessage(content: string): void {
     this.addMessage({ role: 'system', content });

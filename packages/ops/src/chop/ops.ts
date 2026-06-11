@@ -1,10 +1,13 @@
 import type { OpSpec, ChannelSet, Channel } from '@webtoe/core';
 import { channels, asChop, CONTROL_RATE } from './data';
 import { kernels, type LfoShape } from './kernels';
+import { audioOps } from './audio';
 
 const F = 'CHOP' as const;
 
 export const chopOps: OpSpec[] = [
+  ...audioOps,
+
   {
     type: 'chop:constant',
     family: F,

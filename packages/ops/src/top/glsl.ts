@@ -351,4 +351,76 @@ void main() {
   float band = step(0.5, d) * 0.08 + 0.06;
   fragColor = vec4(vec3(band) + u_tint.rgb * 0.15, 1.0);
 }
+`; // end placeholderGlsl
+
+// ---------------------------------------------------------------------------
+// GLSL TOP — TouchDesigner contract shim for user-authored GLSL
+// ---------------------------------------------------------------------------
+
+/**
+ * GLSL TOP contract shim — wraps user code with TD-compatible uniforms
+ * (sTD2DInputs, vUV, uTD2DInfos, TDOutputSwizzle) for WebGL2 ES 300.
+ *
+ * Since ES 300 does not support dynamic sampler array indexing, each
+ * sTD2DInputs[i] is mapped to a named uniform (u_tex0..u_tex3). The
+ * wrapGlslTop() function rewrites references at the JS level.
+ */
+export const glslTopContractGlsl = `#version 300 es
+precision highp float;
+in vec2 v_uv;
+out vec4 fragColor;
+uniform vec2 u_res;
+uniform float u_time;
+
+// --- TD GLSL TOP Contract Shim ---
+uniform sampler2D u_tex0;
+uniform sampler2D u_tex1;
+uniform sampler2D u_tex2;
+uniform sampler2D u_tex3;
+
+// TD-compatible alias for UV coordinate
+#define vUV v_uv
+
+// Per-input resolution info (individual vec4 uniforms, easier to pass from JS)
+uniform vec4 uTD2DInfoRes0;
+uniform vec4 uTD2DInfoRes1;
+uniform vec4 uTD2DInfoRes2;
+uniform vec4 uTD2DInfoRes3;
+
+// TDOutputSwizzle — identity for WebGL2 (no output swizzle needed)
+vec4 TDOutputSwizzle(vec4 c) { return c; }
+// --- End Shim ---
+
 `;
+
+/** Default GLSL TOP passthrough — samples input 0 directly. */
+export const glslTopDefaultGlsl = `${glslTopContractGlsl}
+void main() {
+    fragColor = texture(u_tex0, v_uv);
+}
+`;
+
+/**
+ * Wraps user-written GLSL code with the TD GLSL TOP contract shim.
+ * Replaces TD-style array/hlsl references with WebGL2 ES 300 named
+ * uniform equivalents (sTD2DInputs[i] → u_tex##i,
+ * uTD2DInfos[i].res → uTD2DInfoRes##i).
+ */
+export function wrapGlslTop(userCode: string): string {
+  let code = userCode.trim();
+  if (!code) return glslTopDefaultGlsl;
+
+  // Replace sTD2DInputs[i] with named samplers (ES 300 constraint)
+  code = code.replace(/sTD2DInputs\s*\[\s*0\s*\]/g, 'u_tex0');
+  code = code.replace(/sTD2DInputs\s*\[\s*1\s*\]/g, 'u_tex1');
+  code = code.replace(/sTD2DInputs\s*\[\s*2\s*\]/g, 'u_tex2');
+  code = code.replace(/sTD2DInputs\s*\[\s*3\s*\]/g, 'u_tex3');
+
+  // Replace uTD2DInfos[i].res with named vec4 uniforms
+  code = code.replace(/uTD2DInfos\s*\[\s*0\s*\]\s*\.\s*res/g, 'uTD2DInfoRes0');
+  code = code.replace(/uTD2DInfos\s*\[\s*1\s*\]\s*\.\s*res/g, 'uTD2DInfoRes1');
+  code = code.replace(/uTD2DInfos\s*\[\s*2\s*\]\s*\.\s*res/g, 'uTD2DInfoRes2');
+  code = code.replace(/uTD2DInfos\s*\[\s*3\s*\]\s*\.\s*res/g, 'uTD2DInfoRes3');
+
+  return `${glslTopContractGlsl}${code}\n`;
+}

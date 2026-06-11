@@ -33,19 +33,6 @@ export const commonOps: OpSpec[] = [
   },
 
   {
-    type: 'dat:table',
-    family: 'DAT',
-    label: 'table',
-    inputs: { min: 0, max: 1 },
-    params: [],
-    cook(ctx) {
-      const input = ctx.inputs[0];
-      if (input && input.kind === 'dat') return input;
-      return { kind: 'dat', text: ctx.node.text ?? '' };
-    },
-  },
-
-  {
     type: 'dat:select',
     family: 'DAT',
     label: 'select',
