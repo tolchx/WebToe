@@ -1,0 +1,25 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "types": ["@webgpu/types"],
+    "strict": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "noFallthroughCasesInSwitch": true,
+    "noEmit": true,
+    "skipLibCheck": true,
+    "isolatedModules": true,
+    "useDefineForClassFields": true,
+    "paths": {
+      "@webtoe/core": ["./packages/core/src/index.ts"],
+      "@webtoe/ops": ["./packages/ops/src/index.ts"],
+      "@webtoe/gpu": ["./packages/gpu/src/index.ts"],
+      "@webtoe/io": ["./packages/io/src/index.ts"],
+      "@webtoe/editor": ["./packages/editor/src/index.ts"]
+    }
+  },
+  "include": ["packages/*/src", "apps/*/src", "tests"]
+}

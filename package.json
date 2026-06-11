@@ -1,0 +1,25 @@
+{
+  "name": "webtoe-monorepo",
+  "private": true,
+  "version": "0.1.0",
+  "type": "module",
+  "description": "Web-native dataflow engine for real-time visuals, with TouchDesigner project import",
+  "workspaces": [
+    "packages/*",
+    "apps/*"
+  ],
+  "scripts": {
+    "dev": "npm run dev -w apps/web",
+    "build": "npm run build -w apps/web",
+    "preview": "npm run preview -w apps/web",
+    "test": "vitest run --passWithNoTests",
+    "typecheck": "tsc --noEmit",
+    "check": "npm run typecheck && npm run test"
+  },
+  "devDependencies": {
+    "@webgpu/types": "^0.1.70",
+    "typescript": "^6.0.3",
+    "vite": "^8.0.16",
+    "vitest": "^4.1.8"
+  }
+}
