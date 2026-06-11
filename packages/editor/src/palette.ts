@@ -1,11 +1,16 @@
-import { allOps, type OpSpec } from '@webtoe/core';
+import { allOps, type Family, type OpSpec } from '@webtoe/core';
 import { FAMILY_COLORS } from './style';
 
-/** Searchable op-create dialog (Tab / double-click on empty network space). */
+const FAMILIES: Family[] = ['TOP', 'CHOP', 'COMP', 'DAT'];
+
+/** OP Create dialog: family tabs + multi-column grid + search (searching spans
+ *  all families). Opened with Tab or double-click on empty network space. */
 export class Palette {
   private el: HTMLDivElement | null = null;
   private items: { spec: OpSpec; el: HTMLDivElement }[] = [];
   private active = 0;
+  private family: Family = 'TOP';
+  private query = '';
 
   constructor(
     private readonly host: HTMLElement,
@@ -20,69 +25,110 @@ export class Palette {
     this.close();
     const el = document.createElement('div');
     el.className = 'wt-palette';
-    el.style.left = `${Math.min(x, this.host.clientWidth - 290)}px`;
-    el.style.top = `${Math.min(y, this.host.clientHeight - 390)}px`;
+    el.style.left = `${Math.max(8, Math.min(x, this.host.clientWidth - 560))}px`;
+    el.style.top = `${Math.max(8, Math.min(y, this.host.clientHeight - 420))}px`;
+
+    const head = document.createElement('div');
+    head.className = 'wt-phead2';
+    const title = document.createElement('span');
+    title.className = 'wt-ptitle';
+    title.textContent = 'create operator';
     const input = document.createElement('input');
-    input.placeholder = 'search operators…';
+    input.placeholder = 'search all families…';
     input.spellcheck = false;
-    const list = document.createElement('div');
-    list.className = 'wt-plist';
-    el.append(input, list);
+    head.append(title, input);
+
+    const tabs = document.createElement('div');
+    tabs.className = 'wt-ptabs';
+    const tabEls = new Map<Family, HTMLButtonElement>();
+    for (const fam of FAMILIES) {
+      const b = document.createElement('button');
+      b.textContent = fam;
+      b.style.setProperty('--fam', FAMILY_COLORS[fam] ?? '#888');
+      b.addEventListener('pointerdown', (e) => {
+        e.stopPropagation();
+        e.preventDefault();
+        this.family = fam;
+        this.query = '';
+        input.value = '';
+        render();
+        input.focus();
+      });
+      tabs.appendChild(b);
+      tabEls.set(fam, b);
+    }
+
+    const grid = document.createElement('div');
+    grid.className = 'wt-pgrid';
+    el.append(head, tabs, grid);
     this.host.appendChild(el);
     this.el = el;
 
-    const render = (q: string) => {
-      list.innerHTML = '';
+    const render = () => {
+      grid.innerHTML = '';
       this.items = [];
       this.active = 0;
-      const ql = q.trim().toLowerCase();
-      const groups = new Map<string, OpSpec[]>();
-      for (const spec of allOps()) {
-        if (spec.type === '__root__' || spec.type.endsWith(':stub')) continue;
-        const label = spec.label ?? spec.type;
-        if (ql && !label.toLowerCase().includes(ql) && !spec.type.toLowerCase().includes(ql)) continue;
-        const arr = groups.get(spec.family) ?? [];
-        arr.push(spec);
-        groups.set(spec.family, arr);
-      }
-      for (const fam of ['TOP', 'CHOP', 'COMP', 'DAT']) {
-        const specs = groups.get(fam);
-        if (!specs?.length) continue;
-        const g = document.createElement('div');
-        g.className = 'wt-pgroup';
-        g.textContent = fam;
-        list.appendChild(g);
-        for (const spec of specs.sort((a, b) => (a.label ?? a.type).localeCompare(b.label ?? b.type))) {
-          const item = document.createElement('div');
-          item.className = 'wt-pitem';
-          const dot = document.createElement('span');
-          dot.className = 'wt-dot';
-          dot.style.background = FAMILY_COLORS[fam] ?? '#888';
-          const name = document.createElement('span');
-          name.textContent = spec.label ?? spec.type;
-          item.append(dot, name);
-          item.addEventListener('pointerdown', (e) => {
-            e.stopPropagation();
-            this.pick(spec.type);
-          });
-          list.appendChild(item);
-          this.items.push({ spec, el: item });
+      const q = this.query.trim().toLowerCase();
+      for (const [fam, b] of tabEls) b.classList.toggle('wt-on', !q && fam === this.family);
+
+      const specs = allOps()
+        .filter((s) => s.type !== '__root__' && !s.type.endsWith(':stub'))
+        .filter((s) => (q
+          ? (s.label ?? s.type).toLowerCase().includes(q) || s.type.toLowerCase().includes(q)
+          : s.family === this.family))
+        .sort((a, b) => (a.label ?? a.type).localeCompare(b.label ?? b.type));
+
+      for (const spec of specs) {
+        const item = document.createElement('div');
+        item.className = 'wt-pitem';
+        const dot = document.createElement('span');
+        dot.className = 'wt-dot';
+        dot.style.background = FAMILY_COLORS[spec.family] ?? '#888';
+        const name = document.createElement('span');
+        name.textContent = spec.label ?? spec.type;
+        item.append(dot, name);
+        if (q) {
+          const fam = document.createElement('span');
+          fam.className = 'wt-pfam';
+          fam.textContent = spec.family;
+          item.appendChild(fam);
         }
+        item.addEventListener('pointerdown', (e) => {
+          e.stopPropagation();
+          this.pick(spec.type);
+        });
+        grid.appendChild(item);
+        this.items.push({ spec, el: item });
       }
       this.highlight();
     };
 
-    input.addEventListener('input', () => render(input.value));
+    input.addEventListener('input', () => {
+      this.query = input.value;
+      render();
+    });
     input.addEventListener('keydown', (e) => {
       e.stopPropagation();
+      const cols = Math.max(1, Math.floor(grid.clientWidth / 168));
       if (e.key === 'Escape') this.close();
-      else if (e.key === 'ArrowDown') { this.active = Math.min(this.active + 1, this.items.length - 1); this.highlight(); }
-      else if (e.key === 'ArrowUp') { this.active = Math.max(this.active - 1, 0); this.highlight(); }
-      else if (e.key === 'Enter' && this.items[this.active]) this.pick(this.items[this.active].spec.type);
+      else if (e.key === 'ArrowDown') { this.active = Math.min(this.active + cols, this.items.length - 1); this.highlight(); e.preventDefault(); }
+      else if (e.key === 'ArrowUp') { this.active = Math.max(this.active - cols, 0); this.highlight(); e.preventDefault(); }
+      else if (e.key === 'ArrowRight') { this.active = Math.min(this.active + 1, this.items.length - 1); this.highlight(); e.preventDefault(); }
+      else if (e.key === 'ArrowLeft') { this.active = Math.max(this.active - 1, 0); this.highlight(); e.preventDefault(); }
+      else if (e.key === 'Tab') {
+        e.preventDefault();
+        const i = FAMILIES.indexOf(this.family);
+        this.family = FAMILIES[(i + (e.shiftKey ? FAMILIES.length - 1 : 1)) % FAMILIES.length];
+        this.query = '';
+        input.value = '';
+        render();
+      } else if (e.key === 'Enter' && this.items[this.active]) {
+        this.pick(this.items[this.active].spec.type);
+      }
     });
     el.addEventListener('pointerdown', (e) => e.stopPropagation());
 
-    render('');
+    render();
     input.focus();
   }
 

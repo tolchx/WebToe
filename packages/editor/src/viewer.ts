@@ -1,26 +1,24 @@
 import type { Engine, NodeInst } from '@webtoe/core';
 
-/** Output viewer: blits the active TOP, draws a CHOP scope, or shows DAT text.
- *  Also feeds engine.io.mouse from pointer position over the viewer. */
+/** Output viewer panel. TOP output is composited onto the shared overlay
+ *  canvas by the app loop (this panel just reserves the rect); CHOP scope and
+ *  DAT text render here directly. Also feeds engine.io.mouse. */
 export class Viewer {
-  readonly glCanvas: HTMLCanvasElement;
   private readonly scope: HTMLCanvasElement;
   private readonly datPre: HTMLPreElement;
   private readonly nameTag: HTMLDivElement;
   private history = new Map<string, number[]>();
   target: NodeInst | null = null;
 
-  constructor(private readonly el: HTMLElement, private readonly engine: Engine) {
+  constructor(readonly el: HTMLElement, private readonly engine: Engine) {
     el.className = 'wt-viewer';
-    this.glCanvas = document.createElement('canvas');
-    this.glCanvas.className = 'wt-gl';
     this.scope = document.createElement('canvas');
     this.scope.className = 'wt-scope';
     this.datPre = document.createElement('pre');
     this.datPre.className = 'wt-dattext';
     this.nameTag = document.createElement('div');
     this.nameTag.className = 'wt-viewname';
-    el.append(this.glCanvas, this.scope, this.datPre, this.nameTag);
+    el.append(this.scope, this.datPre, this.nameTag);
 
     const updateMouse = (e: PointerEvent, down?: boolean) => {
       const r = el.getBoundingClientRect();
@@ -38,32 +36,24 @@ export class Viewer {
     const dpr = Math.min(devicePixelRatio || 1, 2);
     const w = Math.max(2, Math.round(this.el.clientWidth * dpr));
     const h = Math.max(2, Math.round(this.el.clientHeight * dpr));
-    if (this.glCanvas.width !== w || this.glCanvas.height !== h) {
-      this.glCanvas.width = w;
-      this.glCanvas.height = h;
-    }
     if (this.scope.width !== w || this.scope.height !== h) {
       this.scope.width = w;
       this.scope.height = h;
     }
   }
 
-  /** called every frame after engine.frame() */
-  draw(): void {
+  /** Non-GL portion of the viewer (scope/DAT/name tag). Returns true when the
+   *  app should composite the target's TOP texture into this panel's rect. */
+  draw(): boolean {
     const t = this.target;
-    const gpu = this.engine.gpu;
     this.nameTag.textContent = t ? `${this.engine.graph.pathOf(t)}${t.error ? ' — ' + t.error : ''}` : '';
     const sctx = this.scope.getContext('2d')!;
     sctx.clearRect(0, 0, this.scope.width, this.scope.height);
     this.datPre.style.display = 'none';
 
-    if (!t || !t.output) return;
-    const out = t.output;
-
-    if (out.kind === 'top' && gpu) {
-      gpu.blitToCanvas(out.tex);
-      return;
-    }
+    const out = t?.output;
+    if (!t || !out) return false;
+    if (out.kind === 'top') return true;
 
     if (out.kind === 'chop') {
       const w = this.scope.width, h = this.scope.height;
@@ -93,12 +83,13 @@ export class Viewer {
         const v = ch.data[ch.data.length - 1] ?? 0;
         sctx.fillText(`${ch.name} ${v.toFixed(3)}`, pad, pad + 14 * (devicePixelRatio || 1) * (i + 0.5));
       });
-      return;
+      return false;
     }
 
     if (out.kind === 'dat') {
       this.datPre.style.display = 'block';
       this.datPre.textContent = out.text.slice(0, 20000);
     }
+    return false;
   }
 }

@@ -1,5 +1,5 @@
 import type {
-  GpuFacade, NodeInst, ShaderSources, TextureHandle, TexturePassSpec,
+  BlitRect, GpuFacade, NodeInst, ShaderSources, TextureHandle, TexturePassSpec,
 } from '@webtoe/core';
 
 /**
@@ -57,7 +57,7 @@ export class WebGL2Backend implements GpuFacade {
   constructor(canvas: HTMLCanvasElement) {
     this.canvas = canvas;
     const gl = canvas.getContext('webgl2', {
-      alpha: false,
+      alpha: true, // the canvas acts as a transparent compositor overlay
       antialias: false,
       premultipliedAlpha: false,
       preserveDrawingBuffer: false,
@@ -151,18 +151,45 @@ export class WebGL2Backend implements GpuFacade {
     return m.handle;
   }
 
-  blitToCanvas(tex: TextureHandle): void {
+  clearCanvas(): void {
+    const gl = this.gl;
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    gl.disable(gl.SCISSOR_TEST);
+    gl.viewport(0, 0, this.canvas.width, this.canvas.height);
+    gl.clearColor(0, 0, 0, 0);
+    gl.clear(gl.COLOR_BUFFER_BIT);
+  }
+
+  blitToCanvas(tex: TextureHandle, rect?: BlitRect): void {
     const gl = this.gl;
     const cw = this.canvas.width, ch = this.canvas.height;
     gl.bindFramebuffer(gl.FRAMEBUFFER, null);
-    gl.viewport(0, 0, cw, ch);
-    gl.clearColor(0.07, 0.07, 0.09, 1);
+
+    // device-pixel rect (CSS top-left origin → GL bottom-left)
+    const s = this.canvas.clientWidth > 0 ? cw / this.canvas.clientWidth : 1;
+    const r = rect
+      ? { x: rect.x * s, y: rect.y * s, w: rect.w * s, h: rect.h * s }
+      : { x: 0, y: 0, w: cw, h: ch };
+    let clip = r;
+    if (rect?.clip) {
+      const c = { x: rect.clip.x * s, y: rect.clip.y * s, w: rect.clip.w * s, h: rect.clip.h * s };
+      const x0 = Math.max(r.x, c.x), y0 = Math.max(r.y, c.y);
+      const x1 = Math.min(r.x + r.w, c.x + c.w), y1 = Math.min(r.y + r.h, c.y + c.h);
+      if (x1 <= x0 || y1 <= y0) return;
+      clip = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    }
+    gl.enable(gl.SCISSOR_TEST);
+    gl.scissor(Math.round(clip.x), Math.round(ch - clip.y - clip.h), Math.round(clip.w), Math.round(clip.h));
+    gl.clearColor(0.06, 0.06, 0.08, 1);
     gl.clear(gl.COLOR_BUFFER_BIT);
-    // contain-fit letterbox
-    const scale = Math.min(cw / tex.width, ch / tex.height);
+
+    // contain-fit letterbox inside the rect
+    const scale = Math.min(r.w / tex.width, r.h / tex.height);
     const w = Math.max(1, Math.round(tex.width * scale));
     const h = Math.max(1, Math.round(tex.height * scale));
-    gl.viewport(Math.floor((cw - w) / 2), Math.floor((ch - h) / 2), w, h);
+    const vx = Math.round(r.x + (r.w - w) / 2);
+    const vyTop = r.y + (r.h - h) / 2;
+    gl.viewport(vx, Math.round(ch - vyTop - h), w, h);
     const prog = this.program('__blit');
     gl.useProgram(prog.prog);
     gl.activeTexture(gl.TEXTURE0);
@@ -170,6 +197,7 @@ export class WebGL2Backend implements GpuFacade {
     const loc = this.loc(prog, 'u_tex0');
     if (loc) gl.uniform1i(loc, 0);
     gl.drawArrays(gl.TRIANGLES, 0, 3);
+    gl.disable(gl.SCISSOR_TEST);
   }
 
   readPixels(tex: TextureHandle, w: number, h: number): Uint8ClampedArray {

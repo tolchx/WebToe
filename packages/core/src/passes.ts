@@ -30,6 +30,15 @@ export interface ShaderSources {
 
 export type BackendName = 'webgl2' | 'webgpu';
 
+/** Target rectangle for canvas compositing, in CSS pixels from the top-left. */
+export interface BlitRect {
+  x: number;
+  y: number;
+  w: number;
+  h: number;
+  clip?: { x: number; y: number; w: number; h: number };
+}
+
 export interface GpuFacade {
   readonly name: BackendName;
   /** engine forwards time each frame so backends can inject `u_time` */
@@ -42,8 +51,13 @@ export interface GpuFacade {
   previousFrame(node: NodeInst): TextureHandle | null;
   /** Upload image/video/canvas pixels into node's pooled texture. */
   uploadMedia(node: NodeInst, source: TexImageSource, flipY?: boolean): TextureHandle;
-  /** Draw a texture to the visible canvas (viewer). */
-  blitToCanvas(tex: TextureHandle): void;
+  /** Clear the visible canvas to transparent — call once per frame before
+   *  compositing viewer/preview rects. */
+  clearCanvas(): void;
+  /** Draw a texture to the visible canvas. With no rect: full-canvas letterbox.
+   *  With rect (CSS px, top-left origin): letterbox inside that rect, optionally
+   *  clipped to `clip` (e.g. the network panel bounds). */
+  blitToCanvas(tex: TextureHandle, rect?: BlitRect): void;
   /** Read back a small RGBA8 thumbnail (perf: throttled by caller). */
   readPixels(tex: TextureHandle, w: number, h: number): Uint8ClampedArray;
   /** Drop pooled resources owned by a deleted node. */

@@ -25,6 +25,9 @@ export class EditorApp {
   private hud!: HTMLElement;
   private projName!: HTMLInputElement;
   private rafId = 0;
+  private rootEl!: HTMLDivElement;
+  private netEl!: HTMLDivElement;
+  private compositor!: HTMLCanvasElement;
 
   constructor(private readonly host: HTMLElement, private readonly opts: EditorOptions = {}) {}
 
@@ -34,6 +37,7 @@ export class EditorApp {
     const root = document.createElement('div');
     root.className = 'wt-root';
     this.host.appendChild(root);
+    this.rootEl = root;
 
     // ---- toolbar
     const bar = document.createElement('div');
@@ -93,12 +97,19 @@ export class EditorApp {
 
     // ---- panels
     const net = document.createElement('div');
+    this.netEl = net;
     const side = document.createElement('div');
     side.className = 'wt-side';
     const viewerEl = document.createElement('div');
     const paramsEl = document.createElement('div');
     side.append(viewerEl, paramsEl);
     root.append(bar, net, side);
+
+    // ---- GPU compositor overlay: one canvas paints the viewer and every
+    // visible node preview at full frame rate (no CPU readbacks)
+    this.compositor = document.createElement('canvas');
+    this.compositor.className = 'wt-compositor';
+    root.appendChild(this.compositor);
 
     this.viewer = new Viewer(viewerEl, this.engine);
     this.params = new ParamPanel(paramsEl, this.engine, () => { /* params are read live */ });
@@ -115,14 +126,25 @@ export class EditorApp {
     // ---- gpu
     const queryBackend = new URLSearchParams(location.search).get('backend');
     const prefer = (queryBackend ?? this.opts.backend ?? 'webgl2') as 'webgl2' | 'webgpu';
-    this.engine.gpu = await createBackend(this.viewer.glCanvas, prefer);
+    this.engine.gpu = await createBackend(this.compositor, prefer);
 
     if (this.opts.starterPatch !== false) this.buildStarter();
     this.network.rebuild();
     this.refreshViewerTarget();
 
+    const fitCompositor = () => {
+      const dpr = Math.min(devicePixelRatio || 1, 2);
+      const w = Math.max(2, Math.round(root.clientWidth * dpr));
+      const h = Math.max(2, Math.round(root.clientHeight * dpr));
+      if (this.compositor.width !== w || this.compositor.height !== h) {
+        this.compositor.width = w;
+        this.compositor.height = h;
+      }
+    };
+    new ResizeObserver(() => { this.viewer.fit(); fitCompositor(); }).observe(root);
     new ResizeObserver(() => this.viewer.fit()).observe(viewerEl);
     this.viewer.fit();
+    fitCompositor();
     this.loop();
   }
 
@@ -213,13 +235,37 @@ export class EditorApp {
 
   private loop = (): void => {
     this.engine.frame(performance.now() / 1000);
-    this.viewer.draw();
+    const gpu = this.engine.gpu;
+    gpu?.clearCanvas();
+
+    const rootRect = this.rootEl.getBoundingClientRect();
+    const rel = (r: DOMRect) => ({ x: r.x - rootRect.x, y: r.y - rootRect.y, w: r.width, h: r.height });
+
+    // viewer
+    const wantsTop = this.viewer.draw();
+    const vt = this.viewer.target?.output;
+    if (gpu && wantsTop && vt && vt.kind === 'top') {
+      gpu.blitToCanvas(vt.tex, rel(this.viewer.el.getBoundingClientRect()));
+    }
+
+    // live node previews at full frame rate, clipped to the network panel
+    if (gpu) {
+      const netClip = rel(this.netEl.getBoundingClientRect());
+      for (const { node, el } of this.network.thumbTargets()) {
+        const out = this.engine.cook(node);
+        if (!out || out.kind !== 'top') continue;
+        const r = rel(el.getBoundingClientRect());
+        if (r.x + r.w < netClip.x || r.x > netClip.x + netClip.w
+          || r.y + r.h < netClip.y || r.y > netClip.y + netClip.h) continue;
+        if (r.w < 4 || r.h < 4) continue;
+        gpu.blitToCanvas(out.tex, { ...r, clip: netClip });
+      }
+    }
+
     const f = this.engine.time.frame;
-    if (f % 10 === 0) this.network.updateThumbs();
     if (f % 15 === 0) {
       this.network.updateBadges();
       this.params.tick();
-      const gpu = this.engine.gpu;
       this.hud.textContent = `v${VERSION} · ${gpu?.name ?? 'no gpu'} · ${this.engine.time.fps.toFixed(0)} fps`;
     }
     this.rafId = requestAnimationFrame(this.loop);

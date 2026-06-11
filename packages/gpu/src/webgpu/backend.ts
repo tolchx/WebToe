@@ -1,5 +1,5 @@
 import type {
-  GpuFacade, NodeInst, ShaderSources, TextureHandle, TexturePassSpec,
+  BlitRect, GpuFacade, NodeInst, ShaderSources, TextureHandle, TexturePassSpec,
 } from '@webtoe/core';
 
 /**
@@ -89,7 +89,7 @@ export class WebGPUBackend implements GpuFacade {
     const context = canvas.getContext('webgpu');
     if (!context) throw new Error('no webgpu canvas context');
     const canvasFormat = navigator.gpu.getPreferredCanvasFormat();
-    context.configure({ device, format: canvasFormat, alphaMode: 'opaque' });
+    context.configure({ device, format: canvasFormat, alphaMode: 'premultiplied' });
     const sampler = device.createSampler({ magFilter: 'linear', minFilter: 'linear' });
     return new WebGPUBackend(device, context, canvasFormat, sampler);
   }
@@ -192,7 +192,24 @@ export class WebGPUBackend implements GpuFacade {
     return m.handle;
   }
 
-  blitToCanvas(tex: TextureHandle): void {
+  clearCanvas(): void {
+    const enc = this.device.createCommandEncoder();
+    const pass = enc.beginRenderPass({
+      colorAttachments: [{
+        view: this.context.getCurrentTexture().createView(),
+        loadOp: 'clear',
+        clearValue: { r: 0, g: 0, b: 0, a: 0 },
+        storeOp: 'store',
+      }],
+    });
+    pass.end();
+    this.device.queue.submit([enc.finish()]);
+    this.frameCleared = true;
+  }
+
+  private frameCleared = false;
+
+  blitToCanvas(tex: TextureHandle, rect?: BlitRect): void {
     if (!this.blitPipeline) {
       const mod = this.device.createShaderModule({ code: BLIT_WGSL });
       this.blitPipeline = this.device.createRenderPipeline({
@@ -204,6 +221,28 @@ export class WebGPUBackend implements GpuFacade {
     }
     const src = this.textures.get(tex.id);
     if (!src) return;
+    const target = this.context.getCurrentTexture();
+    const cw = target.width, ch = target.height;
+    const canvasEl = this.context.canvas as HTMLCanvasElement;
+    const s = canvasEl.clientWidth > 0 ? cw / canvasEl.clientWidth : 1;
+    const r = rect
+      ? { x: rect.x * s, y: rect.y * s, w: rect.w * s, h: rect.h * s }
+      : { x: 0, y: 0, w: cw, h: ch };
+    let clip = r;
+    if (rect?.clip) {
+      const c = { x: rect.clip.x * s, y: rect.clip.y * s, w: rect.clip.w * s, h: rect.clip.h * s };
+      const x0 = Math.max(r.x, c.x), y0 = Math.max(r.y, c.y);
+      const x1 = Math.min(r.x + r.w, c.x + c.w), y1 = Math.min(r.y + r.h, c.y + c.h);
+      if (x1 <= x0 || y1 <= y0) return;
+      clip = { x: x0, y: y0, w: x1 - x0, h: y1 - y0 };
+    }
+    // clamp to attachment bounds (validation requires it)
+    const cx = Math.max(0, Math.round(clip.x));
+    const cy = Math.max(0, Math.round(clip.y));
+    const cwid = Math.min(cw - cx, Math.round(clip.w));
+    const chei = Math.min(ch - cy, Math.round(clip.h));
+    if (cwid <= 0 || chei <= 0) return;
+
     const bindGroup = this.device.createBindGroup({
       layout: this.blitPipeline.getBindGroupLayout(0),
       entries: [
@@ -212,21 +251,21 @@ export class WebGPUBackend implements GpuFacade {
       ],
     });
     const enc = this.device.createCommandEncoder();
-    const target = this.context.getCurrentTexture();
     const pass = enc.beginRenderPass({
       colorAttachments: [{
         view: target.createView(),
-        loadOp: 'clear',
+        loadOp: rect && this.frameCleared ? 'load' : 'clear',
         clearValue: { r: 0.07, g: 0.07, b: 0.09, a: 1 },
         storeOp: 'store',
       }],
     });
-    // contain-fit letterbox via viewport
-    const cw = target.width, ch = target.height;
-    const scale = Math.min(cw / tex.width, ch / tex.height);
+    const scale = Math.min(r.w / tex.width, r.h / tex.height);
     const w = Math.max(1, Math.floor(tex.width * scale));
     const h = Math.max(1, Math.floor(tex.height * scale));
-    pass.setViewport(Math.floor((cw - w) / 2), Math.floor((ch - h) / 2), w, h, 0, 1);
+    const vx = Math.max(0, Math.min(cw - 1, Math.floor(r.x + (r.w - w) / 2)));
+    const vy = Math.max(0, Math.min(ch - 1, Math.floor(r.y + (r.h - h) / 2)));
+    pass.setViewport(vx, vy, Math.min(w, cw - vx), Math.min(h, ch - vy), 0, 1);
+    pass.setScissorRect(cx, cy, cwid, chei);
     pass.setPipeline(this.blitPipeline);
     pass.setBindGroup(0, bindGroup);
     pass.draw(3);

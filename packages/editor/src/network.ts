@@ -3,7 +3,6 @@ import { FAMILY_COLORS } from './style';
 import { Palette } from './palette';
 
 const SVG_NS = 'http://www.w3.org/2000/svg';
-const THUMB_W = 96, THUMB_H = 54;
 
 interface ViewTransform { x: number; y: number; k: number }
 
@@ -17,7 +16,7 @@ export class NetworkView {
   private readonly crumb: HTMLDivElement;
   private readonly palette: Palette;
   private readonly nodeEls = new Map<number, HTMLDivElement>();
-  private readonly thumbs = new Map<number, CanvasRenderingContext2D>();
+  private readonly thumbs = new Map<number, HTMLDivElement>();
   private tf: ViewTransform = { x: 60, y: 60, k: 1 };
   private preview: SVGPathElement | null = null;
   private dragWireSrc: NodeInst | null = null;
@@ -91,25 +90,15 @@ export class NetworkView {
     }
   }
 
-  /** thumbnails — call at low rate; cooks visible TOPs and reads back pixels */
-  updateThumbs(): void {
-    const gpu = this.engine.gpu;
-    if (!gpu) return;
+  /** live preview targets for the compositor: visible TOP nodes of the current
+   *  network and their reserved thumb elements */
+  thumbTargets(): { node: NodeInst; el: HTMLDivElement }[] {
+    const out: { node: NodeInst; el: HTMLDivElement }[] = [];
     for (const n of this.engine.graph.childrenOf(this.current)) {
-      const ctx2d = this.thumbs.get(n.id);
-      if (!ctx2d) continue;
-      const out = this.engine.cook(n);
-      if (!out || out.kind !== 'top') continue;
-      const px = gpu.readPixels(out.tex, THUMB_W, THUMB_H);
-      if (!px.length) continue;
-      const img = ctx2d.createImageData(THUMB_W, THUMB_H);
-      // gl readback is bottom-up — flip rows
-      for (let y = 0; y < THUMB_H; y++) {
-        const srcRow = (THUMB_H - 1 - y) * THUMB_W * 4;
-        img.data.set(px.subarray(srcRow, srcRow + THUMB_W * 4), y * THUMB_W * 4);
-      }
-      ctx2d.putImageData(img, 0, 0);
+      const el = this.thumbs.get(n.id);
+      if (el) out.push({ node: n, el });
     }
+    return out;
   }
 
   /** error badge refresh — cheap, called at low rate */
@@ -175,12 +164,8 @@ export class NetworkView {
       el.classList.add('wt-has-thumb');
       const thumbWrap = document.createElement('div');
       thumbWrap.className = 'wt-thumb';
-      const canvas = document.createElement('canvas');
-      canvas.width = THUMB_W;
-      canvas.height = THUMB_H;
-      thumbWrap.appendChild(canvas);
       el.appendChild(thumbWrap);
-      this.thumbs.set(n.id, canvas.getContext('2d')!);
+      this.thumbs.set(n.id, thumbWrap); // composited live by the app loop
     }
 
     const label = document.createElement('div');
