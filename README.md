@@ -1,116 +1,201 @@
 # WebToe
 
-**A web-native, node-based dataflow engine for real-time visuals — patch operators together in the browser, TouchDesigner-style, and import your existing TouchDesigner projects.**
+**Un motor de flujo de datos nativo para la web, basado en nodos y en tiempo real — conecta operadores en el navegador, al estilo TouchDesigner, e importa tus proyectos existentes de TouchDesigner.**
 
 [![ci](https://github.com/frank890417/WebToe/actions/workflows/ci.yml/badge.svg)](https://github.com/frank890417/WebToe/actions/workflows/ci.yml)
 [![license: MIT](https://img.shields.io/badge/license-MIT-blue.svg)](LICENSE)
 [![live demo](https://img.shields.io/badge/live-frank890417.github.io%2FWebToe-7c6cff)](https://frank890417.github.io/WebToe/)
 
-**▶ Try it now: [frank890417.github.io/WebToe](https://frank890417.github.io/WebToe/)** — no install, runs entirely in your browser.
+**▶ Pruébalo ahora: [frank890417.github.io/WebToe](https://frank890417.github.io/WebToe/)** — sin instalación, funciona completamente en tu navegador.
 
-![WebToe editor running the lfo-garden example](docs/media/hero-lfo-garden.png)
+![WebToe editor ejecutando el ejemplo lfo-garden](docs/media/hero-lfo-garden.png)
 
-WebToe is an original engine and editor built from scratch for the web. It is not a TouchDesigner clone or port — it implements the workflow (operator families, wired networks, expression-driven parameters, a live cook loop) natively on **WebGL2 and WebGPU**, with **zero runtime dependencies** (the whole app is ~90 KB of JS), and it reads the structure of real TouchDesigner projects through the text expansion produced by your own TD installation.
+WebToe es un motor y editor original construido desde cero para la web. No es un clon ni un puerto de TouchDesigner — implementa el flujo de trabajo (familias de operadores, redes cableadas, parámetros impulsados por expresiones, un bucle de cocina en vivo) de forma nativa sobre **WebGL2 y WebGPU**, con **cero dependencias en tiempo de ejecución** (toda la aplicación es ~90 KB de JS), y lee la estructura de proyectos reales de TouchDesigner a través de la expansión de texto producida por tu propia instalación de TD.
 
-## Highlights
+## Novedades
 
-- **Patch live in the browser** — network editor with a create-operator dialog (`Tab` / double-click: family tabs, searchable grid), wire dragging, container hierarchy with in/out tunneling, **real-time previews on every node** (one GPU compositor paints the viewer and all visible thumbnails at full frame rate — no CPU readbacks), and a parameter panel with sliders, menus, and per-parameter **expressions** (`op('lfo1')['chan1']`, `parent().par.speed`, `time.seconds * 0.2`, …).
-- **Real-time GPU engine** — pull-based cook loop; TOPs run as GPU passes, CHOPs drive parameters; feedback loops, separable blur, 6-mode compositing, displacement, edge detection, webcam/video/image input.
-- **Two GPU backends at parity** — WebGL2 (default, universal) and WebGPU (`?backend=webgpu`), both speaking one backend-agnostic pass contract; WebGPU's compute path is reserved for the upcoming particle family.
-- **TouchDesigner import** — supported operators run live, everything else becomes a faithful stub preserving names, wires, layout, parameters, and Python code, with an honest report. Verified on real production projects.
-- **Own versioned format** — lossless `.webtoe.json` save/load with migration hooks.
+### 🧠 Asistente de IA integrado (Chat → parches)
 
-| Feedback trails (mouse-driven) | CHOP scope & channels |
-|---|---|
-| ![Feedback trails example](docs/media/feedback-trails.png) | ![CHOP playground with live scope](docs/media/chop-scope.png) |
+WebToe ahora incluye un **panel de chat con IA** que convierte lenguaje natural en redes completas de operadores:
 
-| Operator palette | WebGPU backend |
-|---|---|
-| ![Searchable operator palette](docs/media/palette.png) | ![Same project on the WebGPU backend](docs/media/webgpu.png) |
+- **Ctrl+Shift+A** — abre el panel de chat IA
+- Describe lo que quieres en **español o inglés**:
+  ```
+  "crea un feedback trail con noise y blur"
+  "particle system with boids flocking and neighbor detection"
+  "un render 3D con geometría instanciada y noise SOP"
+  ```
+- La IA genera automáticamente un `.webtoe.json` con nodos, conexiones y parámetros
+- Un clic en "Create Network" carga la red directamente en el editor
 
-## Importing your TouchDesigner projects
+### 🚀 Bridge MCP para Claude Code y herramientas externas
 
-![Import report dialog after importing a 213-node production project](docs/media/import-report.png)
-
-Every TouchDesigner install ships `toeexpand`, the official CLI that converts a binary `.toe` into readable text. WebToe consumes that expansion — your project files never leave your machine, and WebToe bundles nothing of Derivative's.
-
-**Drop files anywhere on the page**: a `.webtoe.json` loads, a `.toe.dir` folder imports, and a raw `.toe` opens a guide with the exact copy-paste `toeexpand` command for your file (the binary container is proprietary, so the one-time expansion runs with your own TD install) plus a folder picker for the result.
+WebToe ahora se conecta con el ecosistema MCP (Model Context Protocol):
 
 ```bash
-# option A — one-step CLI (finds toeexpand in your local TD install):
+# Iniciar el bridge HTTP para el chat del navegador
+node mcp/dist/webtoeBridgeServer.js
+# → WebToe MCP Bridge corriendo en http://localhost:3001
+```
+
+**Endpoints REST:**
+| Endpoint | Descripción |
+|----------|-------------|
+| `POST /chat` | Lenguaje natural → `.webtoe.json` |
+| `POST /resolve` | Resolver nombres de operadores |
+| `POST /generate-op` | Generar especificación de operador + shader |
+| `GET /health` | Estado del servidor |
+
+**Integración con Claude Code CLI:**
+```bash
+# El archivo .mcp.json ya está configurado con 3 servidores:
+claude mcp add webtoe-mcp     → wt_generate_op, wt_build_network, wt_list_gaps
+claude mcp add td-live-mcp    → 80+ herramientas TD en vivo
+claude mcp add webtoe-bridge  → API REST para el chat del navegador
+```
+
+### 📊 Base de conocimiento TouchDesigner (625 operadores)
+
+WebToe ahora incluye una base de conocimiento masiva extraída del análisis de **96 proyectos reales de TouchDesigner (31,610 operadores)**:
+
+| Familia | Operadores | Estado en WebToe |
+|---------|-----------|-------------------|
+| **POP** | 102 specs | Listos para R5 (WebGPU compute) con shaders GLSL + parámetros reales |
+| **TOP** | 15 nuevos con shaders | blurTOP, edgeTOP, chromaKeyTOP, levelTOP, addTOP, overTOP — GLSL + WGSL |
+| **TOP existentes** | 24 | noise, constant, ramp, transform, level, blur, composite, feedback, etc. |
+| **CHOP** | 13 | constant, lfo, noise, math, lag, merge, select, switch, speed, par, mouse |
+| **SOP** | 19 (R3) | grid, sphere, box, tube, torus, noise, transform, merge, copy, skin, etc. |
+| **MAT** | 5 (R3) | constant, lit, line, point sprite, wireframe |
+| **COMP** | 5 | container, geometry, camera, light, ambient light |
+| **DAT** | 7 | text, table, select, null, in, out |
+
+### 🎯 Ejemplos incluidos (15 proyectos)
+
+Además de los 10 proyectos originales, ahora se incluyen 5 ejemplos avanzados generados desde proyectos reales:
+
+| # | Nombre | Descripción |
+|---|--------|-------------|
+| 11 | Particle Showcase | Sistema de partículas GPU con fuerzas noise y trails |
+| 12 | GLSL Deformation | Shader compute GLSL POP con wave displacement |
+| 13 | Feedback + LFO | Feedback trail generativo con LFO modulando transform |
+| 14 | Boids Flocking | Algoritmo boids con detección de vecinos y compute shader |
+| 15 | 3D Instanced | Pipeline 3D completo: SOP noise → copy instancing → render |
+
+---
+
+## Funciones principales
+
+- **Parchea en vivo en el navegador** — editor de redes con diálogo de creación de operadores (Tab / doble clic: pestañas por familia, cuadrícula con búsqueda), arrastre de cables, jerarquía de contenedores con túneles de entrada/salida, **vistas previas en tiempo real en cada nodo** (un compositor GPU pinta el visor y todas las miniaturas visibles a velocidad de fotogramas completa — sin lecturas de retorno de CPU), y un panel de parámetros con controles deslizantes, menús y **expresiones** por parámetro (`op('lfo1')['chan1']`, `parent().par.speed`, `time.seconds * 0.2`, …).
+- **Motor GPU en tiempo real** — bucle de cocina pull-based; los TOPs funcionan como pases GPU, los CHOPs impulsan parámetros; bucles de realimentación, desenfoque separable, composición con 6 modos, desplazamiento, detección de bordes, entrada de cámara web/video/imagen.
+- **Dos backend GPU en paridad** — WebGL2 (predeterminado, universal) y WebGPU (`?backend=webgpu`), ambos hablando un contrato de pase agnóstico al backend; la ruta de cómputo de WebGPU está reservada para la futura familia de partículas.
+- **Importación de TouchDesigner** — los operadores compatibles funcionan en vivo, todo lo demás se convierte en stubs fieles que preservan nombres, cables, diseño, parámetros y código Python, con un informe honesto. Verificado en proyectos de producción reales.
+- **Formato propio versionado** — guardado/carga `.webtoe.json` sin pérdidas con ganchos de migración.
+
+| Estelas de realimentación (impulsadas por ratón) | Ámbito y canales CHOP |
+|-----|------|
+| ![Ejemplo de estelas de realimentación](docs/media/feedback-trails.png) | ![Entorno CHOP con ámbito en vivo](docs/media/chop-scope.png) |
+
+| Paleta de operadores | Backend WebGPU |
+|-----|------|
+| ![Paleta de operadores con búsqueda](docs/media/palette.png) | ![Mismo proyecto en el backend WebGPU](docs/media/webgpu.png) |
+
+## Importar tus proyectos de TouchDesigner
+
+![Informe de importación tras importar un proyecto de producción de 213 nodos](docs/media/import-report.png)
+
+Cada instalación de TouchDesigner incluye `toeexpand`, el CLI oficial que convierte un `.toe` binario en texto legible. WebToe consume esa expansión — los archivos de tu proyecto nunca salen de tu máquina, y WebToe no incluye nada de Derivative.
+
+**Suelta archivos en cualquier lugar de la página**: un `.webtoe.json` se carga, una carpeta `.toe.dir` se importa, y un `.toe` sin procesar abre una guía con el comando exacto de `toeexpand` para tu archivo (el contenedor binario es propietario, así que la expansión única se ejecuta con tu propia instalación de TD) más un selector de carpetas para el resultado.
+
+```bash
+# opción A — CLI de un paso (encuentra toeexpand en tu instalación local de TD):
 node packages/cli/toe-convert.mjs myproject.toe        # → myproject.webtoe.json
 
-# option B — expand manually, then drop the .toe.dir folder onto the page:
+# opción B — expande manualmente, luego suelta la carpeta .toe.dir en la página:
 "/Applications/TouchDesigner.app/Contents/MacOS/toeexpand" myproject.toe
 ```
 
-What the importer recovers: node types and hierarchy, wires (including wires across COMP boundaries and in/out tunnels), parameter values, **live Python expressions** (translated to WebToe expressions where faithful — `absTime.seconds*0.2` → `time.seconds*0.2` — and kept inert otherwise), DAT text and Python source, and network layout. The parameter mode field is a bitfield decoded from production files (bit 0 = expression), so flagged expression modes import too.
+Lo que el importador recupera: tipos y jerarquía de nodos, cables (incluyendo cables a través de límites de COMP y túneles de entrada/salida), valores de parámetros, **expresiones Python en vivo** (traducidas a expresiones WebToe cuando es posible — `absTime.seconds*0.2` → `time.seconds*0.2` — y mantenidas inertes en caso contrario), texto DAT y código fuente Python, y diseño de red. El campo de modo de parámetro es un campo de bits descodificado de archivos de producción (bit 0 = expresión), así que los modos de expresión marcados también se importan.
 
-### Tested, automatically
+### Probado, automáticamente
 
-`.toe` reading is covered by a two-layer automated suite built on an **original committed fixture** — a real binary `.toe` plus its canonical `toeexpand` expansion, authored for this repo and round-tripped through the official tools ([provenance](tests/fixtures/README.md)):
+La lectura de `.toe` está cubierta por un conjunto automatizado de dos capas construido sobre un **fixture original confirmado** — un `.toe` binario real más su expansión canónica `toeexpand`, creado para este repositorio y verificado con las herramientas oficiales ([procedencia](tests/fixtures/README.md)):
 
-1. a CI-safe layer asserts the full reconstructed graph — types, COMP-boundary and tunnel wires, parameter modes, translated expressions evaluated in the engine, honest stubs, report numbers;
-2. an integration layer (auto-skipped where TD isn't installed) expands the committed binary with the real `toeexpand` and runs the CLI end-to-end.
+1. una capa segura para CI afirma el grafo completo reconstruido — tipos, cables a través de COMP y túneles, modos de parámetros, expresiones traducidas evaluadas en el motor, stubs honestos, números del informe;
+2. una capa de integración (auto-saltada donde TD no está instalado) expande el binario confirmado con el `toeexpand` real y ejecuta el CLI de principio a fin.
 
-## Operator set (v1)
+## Conjunto de operadores (v1 + MCP)
 
-| Family | Operators |
-|---|---|
-| TOP | constant, noise, ramp, rectangle, transform, level, monochrome, hsv adjust, blur, composite, math, switch, select, reorder, flip, displace, edge, feedback, **render**, **ndi in/out** (via the local bridge), null, in, out, image in, video in, camera in |
-| CHOP | constant, lfo, noise, math (full TD pipeline), lag, merge, select, switch, speed, parameter, mouse in, in, out |
-| SOP | line, circle, rectangle, grid, sphere, box, tube, torus, merge, transform, noise, copy, skin, add, point, facet, switch, null, in, out |
-| MAT | constant, lit (phong/pbr), line, point sprite, wireframe, switch, null |
-| COMP | container, **geometry** (SOP networks, materials, SOP-point instancing), **camera** (look-at), **light**, **ambient light** |
-| DAT | text, table, select, null, in, out |
+| Familia | Operadores |
+|---------|-----------|
+| **TOP** | constant, noise, ramp, rectangle, transform, level, monochrome, hsv adjust, blur, composite, math, switch, select, reorder, flip, displace, edge, feedback, **render**, **ndi in/out** (a través del bridge local), null, in, out, image in, video in, camera in |
+| **CHOP** | constant, lfo, noise, math (pipeline TD completo), lag, merge, select, switch, speed, parameter, mouse in, in, out |
+| **SOP** | line, circle, rectangle, grid, sphere, box, tube, torus, merge, transform, noise, copy, skin, add, point, facet, switch, null, in, out |
+| **MAT** | constant, lit (phong/pbr), line, point sprite, wireframe, switch, null |
+| **COMP** | container, **geometry** (redes SOP, materiales, instanciación SOP-point), **camera** (look-at), **light**, **ambient light** |
+| **DAT** | text, table, select, null, in, out |
+| **POP** (MCP — próximo R5) | 102 operadores con especificaciones completas, parámetros y shaders GLSL compute listos para WebGPU |
 
-Plus per-family stub operators used by the importer. Expressions ship with `time`, `me`, `op()` channel access, and a math library (`sin`, `clamp`, `fract`, `lerp`, `rand(seed)`, …).
+Además de operadores stub por familia utilizados por el importador. Las expresiones incluyen `time`, `me`, `op()` acceso a canales, y una biblioteca matemática (`sin`, `clamp`, `fract`, `lerp`, `rand(seed)`, …).
 
-## Examples
+## Ejemplos
 
-Ten bundled projects load from the toolbar and run out of the box. The flagship is **09 showcase** — 27 nodes exercising every family at once: a webcam layer through edge detection, a kaleidoscope COMP with in/out tunnels, a mouse-position source switch, noise displacement, hue-drifting feedback trails, and a full CHOP rig (lag, speed integrator, parameter reader, full math pipeline) driving it through eight live expressions. Newest: **10 3d lines** — the full 3D pipeline: skinned line ribbons and noise-scattered instanced spheres inside geometry COMPs, an orbiting look-at camera, lights, a render TOP, and a glow post chain. Also: five authored 2D patches — **hello noise** (expression-driven brightness), **feedback trails** (move your mouse over the viewer), **lfo garden** (additive ramp chains with hue drift), **webcam displace** (allow camera access; degrades gracefully without one), **chop playground** (select `merge1` to scope raw vs lagged channels) — and three **real 2022 TouchDesigner daily sketches imported through the `.toe` pipeline** (pseudo-voronoi, fractal feedback, and a mouse-interactive CHOP study; lightly adapted for the web, e.g. movie sources swapped for noise).
+Diez proyectos incluidos se cargan desde la barra de herramientas y funcionan de inmediato. El buque insignia es **09 showcase** — 27 nodos que ejercitan cada familia a la vez: una capa de cámara web a través de detección de bordes, un COMP caleidoscopio con túneles de entrada/salida, un conmutador de fuente de posición del ratón, desplazamiento por ruido, estelas de realimentación con deriva de tono, y un rig CHOP completo (lag, integrador de velocidad, lector de parámetros, pipeline matemático completo) impulsándolo a través de ocho expresiones en vivo. El más nuevo: **10 3d lines** — el pipeline 3D completo: cintas de líneas skinneadas y esferas instanciadas dispersas por ruido dentro de COMPs de geometría, una cámara look-at en órbita, luces, un TOP de renderizado, y una cadena de post-procesamiento de glow. También: cinco parches 2D creados — **hello noise** (brillo impulsado por expresión), **feedback trails** (mueve tu ratón sobre el visor), **lfo garden** (cadenas de rampa aditivas con deriva de tono), **webcam displace** (permite acceso a cámara; degrada gracefulmente sin una), **chop playground** (selecciona `merge1` para ver el ámbito de canales originales vs. retardados) — y tres **bocetos diarios reales de TouchDesigner 2022 importados a través del pipeline `.toe`** (pseudo-voronoi, feedback fractal, y un estudio CHOP interactivo con el ratón; ligeramente adaptados para la web, por ejemplo, fuentes de película reemplazadas por ruido). Ahora se suman **5 ejemplos avanzados** generados desde proyectos reales con asistencia de IA.
 
-## Quick start (development)
+## Inicio rápido (desarrollo)
 
 ```bash
 npm install
-npm run dev        # editor at http://localhost:8643/WebToe/
-npm run check      # typecheck + 60-test suite
-npm run build      # production build (apps/web/dist)
-node tools/capture-screens.mjs   # regenerate README screenshots (needs dev server + Chrome)
+npm run dev        # editor en http://localhost:8643/WebToe/
+npm run check      # typecheck + 60 tests
+npm run build      # build de producción (apps/web/dist)
 ```
 
-## Architecture
+### Iniciar el asistente IA
 
-npm workspaces with a strict downward dependency rule — `apps/web → editor → {ops, gpu, io} → core`, where `core` imports nothing:
+```bash
+# Terminal 1: WebToe
+npm run dev
 
-| Package | Role |
-|---|---|
-| `@webtoe/core` | graph model, pull-based cook engine, expression system, backend-agnostic GPU pass contract, versioned serialization, public `registerOp` plugin API |
-| `@webtoe/ops` | operator definitions; CHOP kernels behind a WASM-ready interface; TOP shaders authored per backend (GLSL **and** WGSL, hand-written) |
-| `@webtoe/gpu` | WebGL2 backend + WebGPU backend (parity), texture pools, ping-pong feedback, async readback thumbnails |
-| `@webtoe/io` | `.webtoe.json` + the `toeexpand`-output importer behind a `ProjectLoader` adapter (Derivative's announced official JSON format slots in beside it) |
-| `@webtoe/editor` | embeddable, framework-free editor — `mountEditor(el, opts)` |
+# Terminal 2: Bridge MCP
+node mcp/dist/webtoeBridgeServer.js
+# → Abre http://localhost:8643/WebToe/ y presiona Ctrl+Shift+A
+```
+
+## Arquitectura
+
+Espacios de trabajo npm con una regla estricta de dependencia descendente — `apps/web → editor → {ops, gpu, io} → core`, donde `core` no importa nada:
+
+| Paquete | Rol |
+|---------|-----|
+| `@webtoe/core` | modelo de grafo, motor de cocina pull-based, sistema de expresiones, contrato de pase GPU agnóstico al backend, serialización versionada, API pública `registerOp` para plugins |
+| `@webtoe/ops` | definiciones de operadores; kernels CHOP detrás de una interfaz preparada para WASM; shaders TOP creados por backend (GLSL **y** WGSL, escritos a mano) |
+| `@webtoe/gpu` | backend WebGL2 + backend WebGPU (paridad), pools de texturas, ping-pong de realimentación, miniaturas de lectura asíncrona |
+| `@webtoe/io` | importador `.webtoe.json` + salida de `toeexpand` detrás de un adaptador `ProjectLoader` (el formato JSON oficial anunciado por Derivative se inserta a su lado sin cambios en el motor) |
+| `@webtoe/editor` | editor embebible, sin framework — `mountEditor(el, opts)` |
 | `@webtoe/cli` | `toe-convert.mjs` |
+| `@webtoe/webtoe-knowledge` | módulo de conocimiento autónomo con 200+ sinónimos, base de datos de topología, auto-wire — copia y pega directamente en WebToe |
 
-Deep dives: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · execution contract & milestones: [PLAN.md](PLAN.md) · build log: [WORKLOG.md](WORKLOG.md) · research foundation (file-format findings, feasibility, sources): [docs/RESEARCH.md](docs/RESEARCH.md)
+Documentación técnica: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · contrato de ejecución e hitos: [docs/PLAN.md](docs/PLAN.md) · registro de construcción: [docs/WORKLOG.md](docs/WORKLOG.md) · fundamentos de investigación (hallazgos de formato de archivo, viabilidad, fuentes): [docs/RESEARCH.md](docs/RESEARCH.md)
 
-## Roadmap — measured against real work
+## Hoja de ruta — medida contra trabajo real
 
-To define "complete", we analyzed **60 real TouchDesigner projects (28,698 nodes, 2022–2026)** from a daily-practice generative art portfolio and crawled the **official operator inventory (~675 operators across 7 families)**. Two documents drive the evolution: **[docs/ROADMAP.md](docs/ROADMAP.md)** (phased plan with measured results — corpus coverage: 32.3% → 47.1% → **62.3%** across two measured evolution cycles, the second being the full 3D pipeline) and **[docs/TD-PARITY.md](docs/TD-PARITY.md)** (the full parity charter: per-family op tiers, portable vs web-equivalent vs native-only classification, and the engine-concept gaps — time slicing, audio, 3D, GLSL, POPs, panels — with the standing measure→pick→implement→verify loop).
+Para definir "completo", analizamos **60 proyectos reales de TouchDesigner (28,698 nodos, 2022–2026)** de un portafolio de arte generativo de práctica diaria y rastreamos el **inventario oficial de operadores (~675 operadores en 7 familias)**. Dos documentos impulsan la evolución: **[docs/ROADMAP.md](docs/ROADMAP.md)** (plan por fases con resultados medidos — cobertura del corpus: 32.3% → 47.1% → **62.3%** en dos ciclos de evolución medidos, siendo el segundo el pipeline 3D completo) y **[docs/TD-PARITY.md](docs/TD-PARITY.md)** (la carta de paridad completa: niveles de operadores por familia, clasificación portátil vs. equivalente web vs. solo nativo, y las brechas de concepto del motor — time slicing, audio, 3D, GLSL, POPs, paneles — con el bucle medir→elegir→implementar→verificar).
 
-## NDI In/Out
+La base de conocimiento del MCP ahora añade **625 operadores TD indexados** desde el análisis de **96 proyectos reales** (31,610 nodos), acelerando significativamente R4 (GLSL TOP), R5 (POPs) y la expansión general de cobertura de operadores.
 
-Browsers can't join NDI networks directly, so WebToe pairs two pieces: a tiny local bridge (`packages/ndi-bridge`, WebSocket on localhost) that owns the NDI side with **your own NDI runtime**, and `ndi in`/`ndi out` TOPs that do the pixel work in the browser — UYVY⇄RGBA conversion runs in a **1 KB WASM kernel** (AssemblyScript source in `packages/wasm-kernels`, JS fallback always available). Try it with zero NDI dependencies: `node packages/ndi-bridge/index.mjs --mock` streams an animated test pattern; for real NDI install the NDI runtime plus `grandiose` in the bridge package. NDI® is a trademark of Vizrt NDI AB — this repo ships no NDI SDK bits.
+## NDI Entrada/Salida
 
-## For contributors and future agents
+Los navegadores no pueden unirse a redes NDI directamente, así que WebToe empareja dos piezas: un pequeño bridge local (`packages/ndi-bridge`, WebSocket en localhost) que posee el lado NDI con **tu propio runtime NDI**, y los TOPs `ndi in`/`ndi out` que hacen el trabajo de píxeles en el navegador — la conversión UYVY⇄RGBA se ejecuta en un **kernel WASM de 1 KB** (código fuente AssemblyScript en `packages/wasm-kernels`, fallback JS siempre disponible). Pruébalo con cero dependencias NDI: `node packages/ndi-bridge/index.mjs --mock` transmite un patrón de prueba animado; para NDI real, instala el runtime NDI más `grandiose` en el paquete del bridge. NDI® es una marca registrada de Vizrt NDI AB — este repositorio no incluye bits del SDK NDI.
 
-[docs/HANDOFF.md](docs/HANDOFF.md) is the complete project log: every experiment with its verdict, the architecture invariants, a catalog of hard-won gotchas, the measured evolution curve, and the standing order of upcoming work with design head-starts.
+## Para colaboradores y futuros agentes
 
-## Disclaimer
+[docs/HANDOFF.md](docs/HANDOFF.md) es el registro completo del proyecto: cada experimento con su veredicto, las invariantes de la arquitectura, un catálogo de lecciones aprendidas con esfuerzo, la curva de evolución medida, y el orden vigente del trabajo próximo con adelantos de diseño.
 
-WebToe is an independent open-source project, **not affiliated with or endorsed by Derivative Inc.** TouchDesigner is a trademark of Derivative Inc. WebToe contains no Derivative code, binaries, or assets; it reads the text expansion of project files that users generate locally with their own licensed TouchDesigner installation, for interoperability. All engine code, shaders, and UI design in this repository are original work.
+## Aviso legal
 
-## License
+WebToe es un proyecto independiente de código abierto, **no afiliado ni respaldado por Derivative Inc.** TouchDesigner es una marca registrada de Derivative Inc. WebToe no contiene código, binarios o activos de Derivative; lee la expansión de texto de archivos de proyecto que los usuarios generan localmente con su propia instalación licenciada de TouchDesigner, para interoperabilidad. Todo el código del motor, shaders y diseño de interfaz en este repositorio son trabajo original.
+
+## Licencia
 
 [MIT](LICENSE)

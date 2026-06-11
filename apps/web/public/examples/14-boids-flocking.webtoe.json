@@ -1,0 +1,156 @@
+{
+  "app": "webtoe",
+  "version": 1,
+  "root": {
+    "nodes": [
+      {
+        "name": "sphere1",
+        "type": "pop:sphere",
+        "family": "POP",
+        "pos": [
+          40,
+          40
+        ],
+        "params": {
+          "surftype": {
+            "mode": "const",
+            "value": "points"
+          },
+          "scale": {
+            "mode": "const",
+            "value": 4
+          }
+        }
+      },
+      {
+        "name": "particle1",
+        "type": "pop:particle",
+        "family": "POP",
+        "pos": [
+          200,
+          40
+        ],
+        "params": {
+          "birthrate": {
+            "mode": "const",
+            "value": 300
+          },
+          "life": {
+            "mode": "const",
+            "value": 10
+          },
+          "maxparticles": {
+            "mode": "const",
+            "value": 1000
+          }
+        }
+      },
+      {
+        "name": "neighbor1",
+        "type": "pop:neighbor",
+        "family": "POP",
+        "pos": [
+          360,
+          40
+        ],
+        "params": {
+          "maxdistance": {
+            "mode": "const",
+            "value": 2
+          },
+          "maxneighbors": {
+            "mode": "const",
+            "value": 8
+          },
+          "nebrtype": {
+            "mode": "const",
+            "value": "radius"
+          }
+        }
+      },
+      {
+        "name": "glsl1",
+        "type": "pop:glsl",
+        "family": "POP",
+        "pos": [
+          520,
+          40
+        ],
+        "params": {
+          "npasses": {
+            "mode": "const",
+            "value": 2
+          }
+        }
+      },
+      {
+        "name": "trail1",
+        "type": "pop:trail",
+        "family": "POP",
+        "pos": [
+          680,
+          40
+        ],
+        "params": {
+          "length": {
+            "mode": "const",
+            "value": 8
+          }
+        }
+      },
+      {
+        "name": "render1",
+        "type": "pop:render",
+        "family": "POP",
+        "pos": [
+          840,
+          40
+        ],
+        "flags": {
+          "display": true
+        }
+      },
+      {
+        "name": "compute1",
+        "type": "dat:text",
+        "family": "DAT",
+        "pos": [
+          520,
+          -120
+        ],
+        "params": {
+          "text": {
+            "mode": "const",
+            "value": "void main(){uint id=TDIndex();vec3 sep=TDIn_P()*0.01;vec3 ali=TDIn_P()*0.005;vec3 coh=(TDIn_P()-vec3(0))*0.002;P[id]=TDIn_P()+sep+ali+coh;}"
+          }
+        }
+      }
+    ],
+    "wires": [
+      {
+        "from": "sphere1:0",
+        "to": "particle1:0"
+      },
+      {
+        "from": "particle1:0",
+        "to": "neighbor1:0"
+      },
+      {
+        "from": "neighbor1:0",
+        "to": "glsl1:0"
+      },
+      {
+        "from": "glsl1:0",
+        "to": "trail1:0"
+      },
+      {
+        "from": "trail1:0",
+        "to": "render1:0"
+      }
+    ]
+  },
+  "meta": {
+    "title": "Boids Flocking Simulation",
+    "comment": "Boids algorithm: neighbor detection => GLSL compute (separation/alignment/cohesion) => trails => render. POP compute pattern."
+  }
+}

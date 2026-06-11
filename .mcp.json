@@ -1,0 +1,36 @@
+{
+  "mcpServers": {
+    "webtoe-mcp": {
+      "command": "node",
+      "args": [
+        "C:\\Users\\Tolch\\Documents\\AI_Code\\Touchdesigner_MCP\\Main\\mcp\\dist\\index.js"
+      ],
+      "env": {
+        "TDAPI_HOST": "127.0.0.1",
+        "TDAPI_PORT": "44444"
+      },
+      "description": "WebToe MCP — TouchDesigner/WebToe knowledge bridge. Tools: wt_generate_op, wt_build_network, wt_list_gaps, wt_resolve_prompt"
+    },
+    "td-live-mcp": {
+      "command": "node",
+      "args": [
+        "C:\\Users\\Tolch\\Documents\\AI_Code\\Touchdesigner_MCP\\Main\\mcp\\dist\\index.js"
+      ],
+      "env": {
+        "TDAPI_HOST": "127.0.0.1",
+        "TDAPI_PORT": "44444"
+      },
+      "description": "Live TouchDesigner MCP — 80+ tools for creating/connecting/managing TD nodes. Full topology-aware planning."
+    },
+    "webtoe-bridge": {
+      "command": "node",
+      "args": [
+        "C:\\Users\\Tolch\\Documents\\AI_Code\\Touchdesigner_MCP\\Main\\mcp\\dist\\webtoeBridgeServer.js"
+      ],
+      "description": "WebToe MCP Bridge HTTP server (port 3001) — REST API for browser chat",
+      "env": {
+        "WEBTOE_PORT": "3001"
+      }
+    }
+  }
+}

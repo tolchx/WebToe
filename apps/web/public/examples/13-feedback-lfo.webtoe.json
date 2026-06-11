@@ -1,0 +1,156 @@
+{
+  "app": "webtoe",
+  "version": 1,
+  "root": {
+    "nodes": [
+      {
+        "name": "noise1",
+        "type": "top:noise",
+        "family": "TOP",
+        "pos": [
+          40,
+          40
+        ],
+        "params": {
+          "period": {
+            "mode": "const",
+            "value": 0.45
+          }
+        }
+      },
+      {
+        "name": "feedback1",
+        "type": "top:feedback",
+        "family": "TOP",
+        "pos": [
+          220,
+          40
+        ],
+        "params": {
+          "opacity": {
+            "mode": "const",
+            "value": 0.85
+          }
+        }
+      },
+      {
+        "name": "transform1",
+        "type": "top:transform",
+        "family": "TOP",
+        "pos": [
+          400,
+          40
+        ],
+        "params": {
+          "tx": {
+            "mode": "const",
+            "value": 0
+          },
+          "ty": {
+            "mode": "const",
+            "value": 0
+          },
+          "scale": {
+            "mode": "const",
+            "value": 1.01
+          }
+        }
+      },
+      {
+        "name": "composite1",
+        "type": "top:composite",
+        "family": "TOP",
+        "pos": [
+          580,
+          40
+        ],
+        "params": {
+          "operand": {
+            "mode": "const",
+            "value": "add"
+          }
+        }
+      },
+      {
+        "name": "out1",
+        "type": "top:out",
+        "family": "TOP",
+        "pos": [
+          760,
+          40
+        ],
+        "flags": {
+          "display": true
+        }
+      },
+      {
+        "name": "lfo1",
+        "type": "chop:lfo",
+        "family": "CHOP",
+        "pos": [
+          40,
+          200
+        ],
+        "params": {
+          "frequency": {
+            "mode": "const",
+            "value": 0.4
+          },
+          "amplitude": {
+            "mode": "const",
+            "value": 0.5
+          },
+          "offset": {
+            "mode": "const",
+            "value": 1.0
+          }
+        }
+      },
+      {
+        "name": "level1",
+        "type": "top:level",
+        "family": "TOP",
+        "pos": [
+          400,
+          -80
+        ],
+        "params": {
+          "brightness": {
+            "mode": "const",
+            "value": 1.0
+          }
+        }
+      }
+    ],
+    "wires": [
+      {
+        "from": "noise1:0",
+        "to": "feedback1:0"
+      },
+      {
+        "from": "feedback1:0",
+        "to": "transform1:0"
+      },
+      {
+        "from": "transform1:0",
+        "to": "composite1:1"
+      },
+      {
+        "from": "noise1:0",
+        "to": "composite1:0"
+      },
+      {
+        "from": "composite1:0",
+        "to": "out1:0"
+      },
+      {
+        "from": "transform1:0",
+        "to": "level1:0"
+      }
+    ]
+  },
+  "meta": {
+    "title": "Feedback Loop & LFO",
+    "comment": "Generative feedback trail with LFO-driven transform. 3 families: TOP + CHOP + expression-driven params."
+  }
+}

@@ -1,0 +1,106 @@
+{
+  "app": "webtoe",
+  "version": 1,
+  "root": {
+    "nodes": [
+      {
+        "name": "grid1",
+        "type": "sop:grid",
+        "family": "SOP",
+        "pos": [
+          40,
+          40
+        ],
+        "params": {
+          "rows": {
+            "mode": "const",
+            "value": 80
+          },
+          "cols": {
+            "mode": "const",
+            "value": 80
+          },
+          "scale": {
+            "mode": "const",
+            "value": 5
+          }
+        }
+      },
+      {
+        "name": "glsl1",
+        "type": "pop:glsl",
+        "family": "POP",
+        "pos": [
+          220,
+          40
+        ],
+        "params": {
+          "npasses": {
+            "mode": "const",
+            "value": 1
+          }
+        }
+      },
+      {
+        "name": "trail1",
+        "type": "pop:trail",
+        "family": "POP",
+        "pos": [
+          400,
+          40
+        ],
+        "params": {
+          "length": {
+            "mode": "const",
+            "value": 10
+          }
+        }
+      },
+      {
+        "name": "render1",
+        "type": "pop:render",
+        "family": "POP",
+        "pos": [
+          580,
+          40
+        ],
+        "flags": {
+          "display": true
+        }
+      },
+      {
+        "name": "shader1",
+        "type": "dat:text",
+        "family": "DAT",
+        "pos": [
+          220,
+          -120
+        ],
+        "params": {
+          "text": {
+            "mode": "const",
+            "value": "void main(){uint id=TDIndex();if(id>=TDNumElements())return;vec3 p=TDIn_P();P[id]=vec3(p.x,sin(p.x*5.0)*cos(p.z*3.0)*0.5,p.z);}"
+          }
+        }
+      }
+    ],
+    "wires": [
+      {
+        "from": "grid1:0",
+        "to": "glsl1:0"
+      },
+      {
+        "from": "glsl1:0",
+        "to": "trail1:0"
+      },
+      {
+        "from": "trail1:0",
+        "to": "render1:0"
+      }
+    ]
+  },
+  "meta": {
+    "title": "GLSL Compute Deformation",
+    "comment": "GLSL POP compute shader applying wave displacement to grid points. Uses TDIndex/TDIn_P/P[id] pattern."
+  }
+}

@@ -1,0 +1,153 @@
+{
+  "app": "webtoe",
+  "version": 1,
+  "root": {
+    "nodes": [
+      {
+        "name": "sphere1",
+        "type": "pop:sphere",
+        "family": "POP",
+        "pos": [
+          40,
+          40
+        ],
+        "params": {
+          "surftype": {
+            "mode": "const",
+            "value": "points"
+          },
+          "scale": {
+            "mode": "const",
+            "value": 3
+          }
+        }
+      },
+      {
+        "name": "particle1",
+        "type": "pop:particle",
+        "family": "POP",
+        "pos": [
+          220,
+          40
+        ],
+        "params": {
+          "birthrate": {
+            "mode": "const",
+            "value": 200
+          },
+          "life": {
+            "mode": "const",
+            "value": 3
+          },
+          "maxparticles": {
+            "mode": "const",
+            "value": 2000
+          }
+        }
+      },
+      {
+        "name": "noise1",
+        "type": "pop:noise",
+        "family": "POP",
+        "pos": [
+          400,
+          40
+        ],
+        "params": {
+          "amp0": {
+            "mode": "const",
+            "value": 0.5
+          },
+          "period": {
+            "mode": "const",
+            "value": 1.0
+          },
+          "combineop": {
+            "mode": "const",
+            "value": "translatealongnormal"
+          }
+        }
+      },
+      {
+        "name": "trail1",
+        "type": "pop:trail",
+        "family": "POP",
+        "pos": [
+          580,
+          40
+        ],
+        "params": {
+          "length": {
+            "mode": "const",
+            "value": 15
+          },
+          "active": {
+            "mode": "const",
+            "value": true
+          }
+        }
+      },
+      {
+        "name": "render1",
+        "type": "pop:render",
+        "family": "POP",
+        "pos": [
+          760,
+          40
+        ],
+        "flags": {
+          "display": true
+        }
+      },
+      {
+        "name": "force1",
+        "type": "pop:forceradial",
+        "family": "POP",
+        "pos": [
+          400,
+          -120
+        ],
+        "params": {
+          "radialstrength": {
+            "mode": "const",
+            "value": -0.3
+          },
+          "falloffradius": {
+            "mode": "const",
+            "value": 3
+          }
+        }
+      }
+    ],
+    "wires": [
+      {
+        "from": "sphere1:0",
+        "to": "particle1:0"
+      },
+      {
+        "from": "particle1:0",
+        "to": "noise1:0"
+      },
+      {
+        "from": "noise1:0",
+        "to": "trail1:0"
+      },
+      {
+        "from": "trail1:0",
+        "to": "render1:0"
+      },
+      {
+        "from": "particle1:0",
+        "to": "force1:0"
+      },
+      {
+        "from": "force1:0",
+        "to": "noise1:0"
+      }
+    ]
+  },
+  "meta": {
+    "title": "Particle System Showcase",
+    "comment": "GPU particle system with noise forces and trails. Source: WebToe MCP research (POP topology from 96 TD projects)."
+  }
+}

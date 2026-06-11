@@ -1,0 +1,188 @@
+{
+  "app": "webtoe",
+  "version": 1,
+  "root": {
+    "nodes": [
+      {
+        "name": "grid1",
+        "type": "sop:grid",
+        "family": "SOP",
+        "pos": [
+          40,
+          40
+        ],
+        "params": {
+          "rows": {
+            "mode": "const",
+            "value": 50
+          },
+          "cols": {
+            "mode": "const",
+            "value": 50
+          },
+          "scale": {
+            "mode": "const",
+            "value": 6
+          }
+        }
+      },
+      {
+        "name": "noise1",
+        "type": "sop:noise",
+        "family": "SOP",
+        "pos": [
+          200,
+          40
+        ],
+        "params": {
+          "amp": {
+            "mode": "const",
+            "value": 0.8
+          },
+          "period": {
+            "mode": "const",
+            "value": 1.5
+          }
+        }
+      },
+      {
+        "name": "copy1",
+        "type": "sop:copy",
+        "family": "SOP",
+        "pos": [
+          360,
+          40
+        ]
+      },
+      {
+        "name": "mesh1",
+        "type": "sop:sphere",
+        "family": "SOP",
+        "pos": [
+          520,
+          40
+        ],
+        "params": {
+          "rows": {
+            "mode": "const",
+            "value": 8
+          },
+          "cols": {
+            "mode": "const",
+            "value": 8
+          },
+          "scale": {
+            "mode": "const",
+            "value": 0.3
+          }
+        }
+      },
+      {
+        "name": "geo1",
+        "type": "comp:geometry",
+        "family": "COMP",
+        "pos": [
+          680,
+          40
+        ]
+      },
+      {
+        "name": "camera1",
+        "type": "comp:camera",
+        "family": "COMP",
+        "pos": [
+          680,
+          -80
+        ],
+        "params": {
+          "lookat": {
+            "mode": "const",
+            "value": [
+              0,
+              0,
+              0
+            ]
+          },
+          "pos": {
+            "mode": "const",
+            "value": [
+              0,
+              5,
+              10
+            ]
+          }
+        }
+      },
+      {
+        "name": "light1",
+        "type": "comp:light",
+        "family": "COMP",
+        "pos": [
+          520,
+          -80
+        ],
+        "params": {
+          "lighttype": {
+            "mode": "const",
+            "value": "point"
+          },
+          "intensity": {
+            "mode": "const",
+            "value": 1
+          }
+        }
+      },
+      {
+        "name": "render1",
+        "type": "top:render",
+        "family": "TOP",
+        "pos": [
+          860,
+          40
+        ],
+        "flags": {
+          "display": true
+        }
+      },
+      {
+        "name": "null1",
+        "type": "top:out",
+        "family": "TOP",
+        "pos": [
+          860,
+          -80
+        ]
+      }
+    ],
+    "wires": [
+      {
+        "from": "grid1:0",
+        "to": "noise1:0"
+      },
+      {
+        "from": "noise1:0",
+        "to": "copy1:0"
+      },
+      {
+        "from": "mesh1:0",
+        "to": "copy1:1"
+      },
+      {
+        "from": "copy1:0",
+        "to": "geo1:0"
+      },
+      {
+        "from": "geo1:0",
+        "to": "render1:0"
+      },
+      {
+        "from": "render1:0",
+        "to": "null1:0"
+      }
+    ]
+  },
+  "meta": {
+    "title": "3D Instanced Geometry",
+    "comment": "SOP noise displacement + copy instancing + geometry COMP + camera/light/render pipeline. Full 3D pipeline."
+  }
+}
