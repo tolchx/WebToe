@@ -33,7 +33,7 @@ function ensureShader(ctx: CookCtx, spec: OpSpec): void {
 
 /** Visible "no signal" output so a missing input reads as such, not as black. */
 function placeholder(ctx: CookCtx, tint: [number, number, number, number]): TextureOut {
-  ctx.gpu!.registerShader('top:placeholder', { glsl: glsl.placeholderGlsl });
+  ctx.gpu!.registerShader('top:placeholder', { glsl: glsl.placeholderGlsl, wgsl: wgsl.placeholderWgsl });
   const { w, h } = resolution(ctx, null);
   const tex = ctx.gpu!.runPass(ctx.node, {
     shaderId: 'top:placeholder',
@@ -93,8 +93,8 @@ export const topOps: OpSpec[] = [
       { key: 'mono', type: 'toggle', default: true },
       ...resParams('custom'),
     ],
-    backends: ['webgl2'],
-    shaders: { glsl: glsl.noiseGlsl },
+    backends: ['webgl2', 'webgpu'],
+    shaders: { glsl: glsl.noiseGlsl, wgsl: wgsl.noiseWgsl },
     cook(ctx) {
       if (!requireGpu(ctx)) return null;
       ensureShader(ctx, this);
@@ -164,8 +164,8 @@ export const topOps: OpSpec[] = [
       { key: 'softness', type: 'float', default: 0.002, min: 0, max: 0.5 },
       ...resParams('custom'),
     ],
-    backends: ['webgl2'],
-    shaders: { glsl: glsl.rectangleGlsl },
+    backends: ['webgl2', 'webgpu'],
+    shaders: { glsl: glsl.rectangleGlsl, wgsl: wgsl.rectangleWgsl },
     cook(ctx) {
       if (!requireGpu(ctx)) return null;
       ensureShader(ctx, this);
@@ -202,8 +202,8 @@ export const topOps: OpSpec[] = [
       { key: 'extend', type: 'menu', default: 'hold', menu: ['hold', 'cycle', 'mirror', 'zero'] },
       ...resParams('input'),
     ],
-    backends: ['webgl2'],
-    shaders: { glsl: glsl.transformGlsl },
+    backends: ['webgl2', 'webgpu'],
+    shaders: { glsl: glsl.transformGlsl, wgsl: wgsl.transformWgsl },
     cook(ctx) {
       if (!requireGpu(ctx)) return null;
       ensureShader(ctx, this);
@@ -274,8 +274,8 @@ export const topOps: OpSpec[] = [
       { key: 'bweight', type: 'float', default: 0.114, min: 0, max: 1 },
       ...resParams('input'),
     ],
-    backends: ['webgl2'],
-    shaders: { glsl: glsl.monochromeGlsl },
+    backends: ['webgl2', 'webgpu'],
+    shaders: { glsl: glsl.monochromeGlsl, wgsl: wgsl.monochromeWgsl },
     cook(ctx) {
       if (!requireGpu(ctx)) return null;
       ensureShader(ctx, this);
@@ -303,8 +303,8 @@ export const topOps: OpSpec[] = [
       { key: 'valmult', type: 'float', default: 1, min: 0, max: 4 },
       ...resParams('input'),
     ],
-    backends: ['webgl2'],
-    shaders: { glsl: glsl.hsvadjustGlsl },
+    backends: ['webgl2', 'webgpu'],
+    shaders: { glsl: glsl.hsvadjustGlsl, wgsl: wgsl.hsvadjustWgsl },
     cook(ctx) {
       if (!requireGpu(ctx)) return null;
       ensureShader(ctx, this);
@@ -336,8 +336,8 @@ export const topOps: OpSpec[] = [
       { key: 'direction', type: 'menu', default: 'both', menu: ['both', 'horizontal', 'vertical'] },
       ...resParams('input'),
     ],
-    backends: ['webgl2'],
-    shaders: { glsl: glsl.blurGlsl },
+    backends: ['webgl2', 'webgpu'],
+    shaders: { glsl: glsl.blurGlsl, wgsl: wgsl.blurWgsl },
     cook(ctx) {
       if (!requireGpu(ctx)) return null;
       ensureShader(ctx, this);
@@ -383,8 +383,8 @@ export const topOps: OpSpec[] = [
       },
       ...resParams('input'),
     ],
-    backends: ['webgl2'],
-    shaders: { glsl: glsl.compositeGlsl },
+    backends: ['webgl2', 'webgpu'],
+    shaders: { glsl: glsl.compositeGlsl, wgsl: wgsl.compositeWgsl },
     cook(ctx) {
       if (!requireGpu(ctx)) return null;
       ensureShader(ctx, this);
@@ -412,8 +412,8 @@ export const topOps: OpSpec[] = [
       { key: 'offsety', type: 'float', default: 0, min: -1, max: 1 },
       ...resParams('input'),
     ],
-    backends: ['webgl2'],
-    shaders: { glsl: glsl.displaceGlsl },
+    backends: ['webgl2', 'webgpu'],
+    shaders: { glsl: glsl.displaceGlsl, wgsl: wgsl.displaceWgsl },
     cook(ctx) {
       if (!requireGpu(ctx)) return null;
       ensureShader(ctx, this);
@@ -445,8 +445,8 @@ export const topOps: OpSpec[] = [
       { key: 'compinput', type: 'toggle', default: false },
       ...resParams('input'),
     ],
-    backends: ['webgl2'],
-    shaders: { glsl: glsl.edgeGlsl },
+    backends: ['webgl2', 'webgpu'],
+    shaders: { glsl: glsl.edgeGlsl, wgsl: wgsl.edgeWgsl },
     cook(ctx) {
       if (!requireGpu(ctx)) return null;
       ensureShader(ctx, this);
@@ -475,7 +475,7 @@ export const topOps: OpSpec[] = [
     lazyInputs: true,
     alwaysCook: true,
     params: [],
-    backends: ['webgl2'],
+    backends: ['webgl2', 'webgpu'],
     cook(ctx) {
       if (!requireGpu(ctx)) return null;
       const src = ctx.node.inputs[0];
@@ -483,7 +483,7 @@ export const topOps: OpSpec[] = [
       const prev = ctx.gpu!.previousFrame(src);
       if (prev) return { kind: 'top', tex: prev };
       // first frame: emit transparent black so downstream chains start clean
-      ctx.gpu!.registerShader('top:feedback:seed', { glsl: glsl.constantGlsl });
+      ctx.gpu!.registerShader('top:feedback:seed', { glsl: glsl.constantGlsl, wgsl: wgsl.constantWgsl });
       const tex = ctx.gpu!.runPass(ctx.node, {
         shaderId: 'top:feedback:seed',
         uniforms: { u_color: [0, 0, 0, 0] },

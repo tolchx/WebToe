@@ -44,6 +44,13 @@ struct VOut { @builtin(position) pos: vec4f, @location(0) uv: vec2f }
   return textureSample(tex, samp, in.uv);
 }`;
 
+const COPY_WGSL = `
+@group(0) @binding(2) var samp: sampler;
+@group(0) @binding(3) var tex0: texture_2d<f32>;
+@fragment fn fs(in: VOut) -> @location(0) vec4f {
+  return textureSample(tex0, samp, in.uv);
+}`;
+
 const PASS_VERT_WGSL = `
 struct Globals { res: vec4f, time: vec4f }
 struct VOut { @builtin(position) pos: vec4f, @location(0) uv: vec2f }
@@ -205,14 +212,21 @@ export class WebGPUBackend implements GpuFacade {
       ],
     });
     const enc = this.device.createCommandEncoder();
+    const target = this.context.getCurrentTexture();
     const pass = enc.beginRenderPass({
       colorAttachments: [{
-        view: this.context.getCurrentTexture().createView(),
+        view: target.createView(),
         loadOp: 'clear',
         clearValue: { r: 0.07, g: 0.07, b: 0.09, a: 1 },
         storeOp: 'store',
       }],
     });
+    // contain-fit letterbox via viewport
+    const cw = target.width, ch = target.height;
+    const scale = Math.min(cw / tex.width, ch / tex.height);
+    const w = Math.max(1, Math.floor(tex.width * scale));
+    const h = Math.max(1, Math.floor(tex.height * scale));
+    pass.setViewport(Math.floor((cw - w) / 2), Math.floor((ch - h) / 2), w, h, 0, 1);
     pass.setPipeline(this.blitPipeline);
     pass.setBindGroup(0, bindGroup);
     pass.draw(3);
@@ -220,9 +234,78 @@ export class WebGPUBackend implements GpuFacade {
     this.device.queue.submit([enc.finish()]);
   }
 
-  readPixels(): Uint8ClampedArray {
-    // GPU readback is async; thumbnails on webgpu land with M7
-    return new Uint8ClampedArray(0);
+  /** Async-readback thumbnails: returns the latest completed readback for this
+   *  texture's owner slot and kicks off the next one. Empty until first completes. */
+  readPixels(tex: TextureHandle, w: number, h: number): Uint8ClampedArray {
+    const key = `${tex.id}:${w}x${h}`;
+    const cached = this.thumbCache.get(key);
+    if (!this.thumbPending.has(key)) {
+      this.thumbPending.add(key);
+      void this.captureThumb(tex, w, h, key).finally(() => this.thumbPending.delete(key));
+    }
+    return cached ?? new Uint8ClampedArray(0);
+  }
+
+  private readonly thumbCache = new Map<string, Uint8ClampedArray>();
+  private readonly thumbPending = new Set<string>();
+  private thumbScratch: { tex: GPUTexture; w: number; h: number } | null = null;
+
+  private async captureThumb(src: TextureHandle, w: number, h: number, key: string): Promise<void> {
+    const srcTex = this.textures.get(src.id);
+    if (!srcTex) return;
+    if (!this.thumbScratch || this.thumbScratch.w !== w || this.thumbScratch.h !== h) {
+      this.thumbScratch?.tex.destroy();
+      this.thumbScratch = {
+        tex: this.device.createTexture({
+          size: [w, h],
+          format: FORMAT,
+          usage: GPUTextureUsage.RENDER_ATTACHMENT | GPUTextureUsage.COPY_SRC | GPUTextureUsage.TEXTURE_BINDING,
+        }),
+        w, h,
+      };
+    }
+    // resize pass into scratch via the shared layout pipeline
+    this.registerShader('__copy', { wgsl: COPY_WGSL });
+    const pipeline = this.pipeline('__copy', 1);
+    const ubo = this.device.createBuffer({ size: 256 + 16, usage: GPUBufferUsage.UNIFORM | GPUBufferUsage.COPY_DST });
+    this.device.queue.writeBuffer(ubo, 0, new Float32Array([w, h, 0, 0, this.time, 0, 0, 0]));
+    const entries: GPUBindGroupEntry[] = [
+      { binding: 0, resource: { buffer: ubo, offset: 0, size: 32 } },
+      { binding: 1, resource: { buffer: ubo, offset: 256, size: 16 } },
+      { binding: 2, resource: this.sampler },
+      { binding: 3, resource: srcTex.createView() },
+    ];
+    for (let i = 1; i < MAX_INPUTS; i++) entries.push({ binding: 3 + i, resource: this.dummyTexture().createView() });
+    const bindGroup = this.device.createBindGroup({ layout: this.sharedLayout(), entries });
+
+    const bytesPerRow = Math.ceil((w * 4) / 256) * 256;
+    const buf = this.device.createBuffer({ size: bytesPerRow * h, usage: GPUBufferUsage.COPY_DST | GPUBufferUsage.MAP_READ });
+
+    const enc = this.device.createCommandEncoder();
+    const pass = enc.beginRenderPass({
+      colorAttachments: [{ view: this.thumbScratch.tex.createView(), loadOp: 'clear', clearValue: { r: 0, g: 0, b: 0, a: 1 }, storeOp: 'store' }],
+    });
+    pass.setPipeline(pipeline);
+    pass.setBindGroup(0, bindGroup);
+    pass.draw(3);
+    pass.end();
+    enc.copyTextureToBuffer({ texture: this.thumbScratch.tex }, { buffer: buf, bytesPerRow }, [w, h]);
+    this.device.queue.submit([enc.finish()]);
+
+    try {
+      await buf.mapAsync(GPUMapMode.READ);
+      const mapped = new Uint8Array(buf.getMappedRange());
+      // tight-pack rows, flipping vertically to match the GL readback convention
+      const out = new Uint8ClampedArray(w * h * 4);
+      for (let y = 0; y < h; y++) {
+        const srcRow = y * bytesPerRow;
+        out.set(mapped.subarray(srcRow, srcRow + w * 4), (h - 1 - y) * w * 4);
+      }
+      this.thumbCache.set(key, out);
+    } finally {
+      buf.destroy();
+      ubo.destroy();
+    }
   }
 
   releaseNode(node: NodeInst): void {
@@ -249,6 +332,8 @@ export class WebGPUBackend implements GpuFacade {
       t.prev.destroy();
     }
     for (const m of this.mediaTargets.values()) m.tex.destroy();
+    this.thumbScratch?.tex.destroy();
+    this.thumbCache.clear();
     this.targets.clear();
     this.mediaTargets.clear();
     this.textures.clear();
