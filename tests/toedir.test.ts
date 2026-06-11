@@ -13,7 +13,9 @@ function fixture(): ImportFile[] {
     'noise1.n': 'TOP:noise\ntile 100 400 130 90\nflags =  viewer 1\nend\n',
     'noise1.parm': '?\nperiod 0 0.5\nharmon 0 4\ntz 17 0 absTime.seconds*0.2\n?\n',
     'level1.n': 'TOP:level\ntile 300 400 130 90\ninputs\n{\n0 \tnoise1\n}\ncolor 0.5 0.5 0.5\nend\n',
-    'level1.parm': '?\nbrightness1 17 1 math.sin(absTime.seconds)*0.5+1\nopacity 0 0.9\ninvert 0 1\n?\n',
+    // brightness uses flagged expression mode 49 (=32|16|1), gamma plain 17 —
+    // both must be treated as expressions (bit 0 of the mode bitfield)
+    'level1.parm': '?\nbrightness1 49 1 math.sin(absTime.seconds)*0.5+1\ngamma1 17 1 absTime.seconds*0.1+1\nopacity 0 0.9\ninvert 0 1\n?\n',
     'glow1.n': 'TOP:bloom\ntile 500 400 130 90\ninputs\n{\n0 \tlevel1\n}\nend\n',
     'mover1.n': 'CHOP:pattern\ntile 100 200 130 60\nend\n',
     'scene1.n': 'COMP:container\ntile 700 400 160 120\nend\n',
@@ -65,6 +67,9 @@ describe('toedir importer', () => {
     const b = level.params.get('brightness')!;
     expect(b.mode).toBe('expr');
     expect(b.expr).toBe('sin(time.seconds)*0.5+1');
+    const ga = level.params.get('gamma')!;
+    expect(ga.mode).toBe('expr');
+    expect(ga.expr).toBe('time.seconds*0.1+1');
     expect(report.exprTranslated).toBeGreaterThanOrEqual(1);
     // noise1 'tz' has an expression but no param mapping → ignored, not crashed
     expect(g.resolve('/noise1', g.root)!.params.get('period')?.value).toBe(0.5);

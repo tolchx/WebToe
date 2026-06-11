@@ -318,7 +318,10 @@ export const toedirLoader: ProjectLoader = {
             unmappedParms++;
             continue;
           }
-          if (mode === 17) {
+          // mode is a bitfield: bit 0 = expression active ("<default> <expr>"),
+          // bit 4 = string-with-default-expression component (empirically decoded
+          // from production files: 17=16|1, 49=32|16|1, 273=256|16|1, 48=32|16, …)
+          if (mode & 1) {
             // "<default> <python expression>"
             const sp = rest.indexOf(' ');
             const def = sp >= 0 ? rest.slice(0, sp) : rest;
@@ -336,9 +339,9 @@ export const toedirLoader: ProjectLoader = {
             }
             continue;
           }
-          // const-ish modes (0 = value, 16 = "quoted-string default-expr")
+          // constant modes (bit 4 set = "quoted-string default-expr", else plain value)
           let value: string | number = rest;
-          if (mode === 16) {
+          if (mode & 16) {
             const q = rest.match(/^"([^"]*)"/);
             value = q ? q[1] : rest.split(/\s+/)[0];
           } else {

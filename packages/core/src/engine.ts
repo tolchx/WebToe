@@ -29,7 +29,9 @@ export class Engine {
       this.lastSeconds = now;
     }
     const t = now - this.startSeconds;
-    const delta = Math.min(Math.max(now - this.lastSeconds, 1e-4), 0.25);
+    // delta floor = 4ms (250 fps): no real display exceeds it, and it keeps
+    // abnormal drivers (tests, capture tools) from skewing the fps estimate
+    const delta = Math.min(Math.max(now - this.lastSeconds, 1 / 250), 0.25);
     this.lastSeconds = now;
     const fps = this.time.fps * 0.95 + (1 / delta) * 0.05;
     this.time = { seconds: t, frame: this.time.frame + 1, delta, fps };

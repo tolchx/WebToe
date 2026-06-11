@@ -57,9 +57,16 @@ Append-only build log. Protocol: every work chunk gets an entry — timestamp, w
 - **M7 WebGPU parity**: WGSL for all shader-driven TOPs (noise/rectangle/transform/monochrome/hsv/blur/composite/displace/edge + placeholder/feedback-seed), letterboxed blit via setViewport, async copyTextureToBuffer thumbnail cache. Browser-verified on `?backend=webgpu`: lfo garden renders, thumbnails paint, feedback trails accumulate (lit-pixel check 69.6% vs ~1% single-rect), zero node errors; WebGL2 regression-checked clean.
 - 42 tests green; @types/node added for the node-API test layers.
 
+## 2026-06-11 — v1.2: portfolio-driven roadmap, README/repo completion
+
+- **Corpus analysis** (private tooling in the lab repo): 199 unique production .toe projects found (2022–2026 daily practice), 60 expanded and aggregated — 28,698 nodes. Findings: 32.3% node coverage today; 3D pipeline (geo 48/60, render 46/60, SOP/MAT) is the dominant blocker; then routing TOPs (switch/math/reorder/select), `parent().par` expression family, TOP:glsl (32/60), POPs (2025–26 era), replicator+table (60/60). Published as docs/ROADMAP.md (aggregate numbers only, nothing project-identifying) with phases R1–R7 and measured targets.
+- **Importer upgrade from the data**: parameter mode is a bitfield — bit 0 = expression (decoded from samples: 17, 49, 273…), bit 4 = string-with-default-expr. Importer now catches flagged expression modes (~7k more live expressions in the corpus); regression test added (mode 49).
+- **Engine**: fps delta floor 4 ms (250 fps ceiling) so abnormal frame drivers can't skew the estimate.
+- **README completed**: real screenshots (docs/media/, 6 shots incl. webgpu + import report with real measured numbers) captured via committed tools/capture-screens.mjs (playwright-core + system Chrome, drives `__webtoe.loop()` because headless tabs pause RAF); badges, gallery, import guide, architecture/roadmap links. Repo metadata set: description, homepage, 9 topics. Pages already on workflow builds.
+
 ## NEXT
 
-Backlog (v2):
+Backlog (v2 — full detail and measured targets in docs/ROADMAP.md):
 1. M8 compute particle family (POPs spirit) + audio-rate CHOPs (wasm decision per PLAN §5 benchmark gate).
 2. Importer round 3: cross-network wire resolution, raw-.toe drop explainer modal, more TYPE_MAP/PARAM_MAP entries driven by real import-report histograms, media relink-by-drop flow.
 3. Editor round 2: marquee select, undo/redo, node rename UI, COMP display-child preview thumbs, mobile/touch pan-zoom.
