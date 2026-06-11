@@ -20,6 +20,7 @@ const editorPromise = mountEditor(app, {
     { name: '07 sketch: fractals (2022, imported)', url: `${base}examples/07-sketch-fractals.webtoe.json` },
     { name: '08 sketch: chop study (2022, imported)', url: `${base}examples/08-sketch-chop-study.webtoe.json` },
     { name: '09 showcase (camera + everything)', url: `${base}examples/09-showcase.webtoe.json` },
+    { name: '10 3d lines (SOPs + render)', url: `${base}examples/10-3d-lines.webtoe.json` },
   ],
 });
 

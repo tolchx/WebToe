@@ -15,3 +15,5 @@ export {
 } from './expr';
 export { Engine } from './engine';
 export { graphToJSON, graphFromJSON, FORMAT_VERSION, LoadError } from './serialize';
+export * as mat4 from './mat4';
+export type { Mat4 } from './mat4';

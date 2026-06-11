@@ -160,7 +160,7 @@ export class NetworkView {
     fam.style.background = FAMILY_COLORS[spec.family] ?? '#888';
     el.appendChild(fam);
 
-    if (spec.family === 'TOP') {
+    if (spec.family === 'TOP' || spec.family === 'SOP' || n.type === 'comp:geo') {
       el.classList.add('wt-has-thumb');
       const thumbWrap = document.createElement('div');
       thumbWrap.className = 'wt-thumb';

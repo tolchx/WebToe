@@ -1,7 +1,7 @@
 import { allOps, type Family, type OpSpec } from '@webtoe/core';
 import { FAMILY_COLORS } from './style';
 
-const FAMILIES: Family[] = ['TOP', 'CHOP', 'COMP', 'DAT'];
+const FAMILIES: Family[] = ['TOP', 'CHOP', 'SOP', 'MAT', 'COMP', 'DAT'];
 
 /** OP Create dialog: family tabs + multi-column grid + search (searching spans
  *  all families). Opened with Tab or double-click on empty network space. */

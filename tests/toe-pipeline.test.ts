@@ -44,14 +44,34 @@ describe('.toe pipeline (committed toeexpand fixture)', () => {
     expectType('/project1/inner1/in1', 'top:in');
     expectType('/project1/inner1/out1', 'top:out');
 
+    // 3D pipeline branch (fixture v2)
+    expectType('/project1/geo1', 'comp:geo');
+    expectType('/project1/geo1/circle1', 'sop:circle');
+    expectType('/project1/geo1/skin1', 'sop:skin');
+    expectType('/project1/geo1/out2', 'sop:out');
+    expectType('/project1/linemat1', 'mat:line');
+    expectType('/project1/cam2', 'comp:cam');
+    expectType('/project1/light2', 'comp:light');
+    expectType('/project1/render1', 'top:render');
+    const geo1 = g.resolve('/project1/geo1', g.root)!;
+    expect(geo1.params.get('material')?.value).toBe('../linemat1');
+    const cam2 = g.resolve('/project1/cam2', g.root)!;
+    expect(cam2.params.get('fov')?.value).toBe(40);
+    expect(cam2.params.get('tz')?.value).toBe(4);
+    const circ = g.resolve('/project1/geo1/circle1', g.root)!;
+    expect(circ.params.get('radius')?.value).toBe(0.4);
+    expect(circ.params.get('divisions')?.value).toBe(24);
+    const rend = g.resolve('/project1/render1', g.root)!;
+    expect(rend.params.get('resw')?.value).toBe(640);
+
     // deliberate unmapped op → honest stub with original type label
     const stub = g.resolve('/project1/mirror1', g.root)!;
     expect(stub.type).toBe('top:stub');
     expect(stub.foreignType).toBe('TOP:mirror');
 
-    expect(report.nodesTotal).toBe(13);
+    expect(report.nodesTotal).toBe(23);
     expect(report.nodesStubbed).toBe(1);
-    expect(report.nodesMapped).toBe(12);
+    expect(report.nodesMapped).toBe(22);
   });
 
   it('restores wires including COMP-boundary and tunnel wiring', async () => {

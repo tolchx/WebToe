@@ -60,7 +60,28 @@ export interface GpuFacade {
   blitToCanvas(tex: TextureHandle, rect?: BlitRect): void;
   /** Read back a small RGBA8 thumbnail (perf: throttled by caller). */
   readPixels(tex: TextureHandle, w: number, h: number): Uint8ClampedArray;
+  /** Render a 3D scene into the node's pooled target (depth-buffered).
+   *  Backends may not support it (v1: WebGL2 only) — they throw a clear error
+   *  the engine surfaces as a node error badge. */
+  renderScene(node: NodeInst, spec: ScenePassSpec): TextureHandle;
   /** Drop pooled resources owned by a deleted node. */
   releaseNode(node: NodeInst): void;
   dispose(): void;
+}
+
+export interface SceneDraw {
+  geo: import('./types').GeometryData;
+  /** stable cache key (node path); pairs with geo.version for VAO caching */
+  geoKey: string;
+  model: Float32Array;
+  material: import('./types').MaterialSpec;
+  instances?: { count: number; translate: Float32Array; color?: Float32Array };
+}
+
+export interface ScenePassSpec {
+  camera: { view: Float32Array; proj: Float32Array };
+  lights: import('./types').SceneLight[];
+  draws: SceneDraw[];
+  output: { width: number; height: number };
+  clear: [number, number, number, number];
 }

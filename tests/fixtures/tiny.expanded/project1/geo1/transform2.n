@@ -1,0 +1,8 @@
+SOP:transform
+tile 200 0 130 90
+flags =  viewer 1 parlanguage 0
+inputs
+{
+0 	circle1
+}
+end

@@ -73,6 +73,40 @@ const TYPE_MAP: Record<string, string> = {
   'COMP:container': 'comp:container',
   'COMP:base': 'comp:container',
   'COMP:null': 'comp:container',
+  'COMP:geo': 'comp:geo',
+  'COMP:cam': 'comp:cam',
+  'COMP:light': 'comp:light',
+  'COMP:ambient': 'comp:ambientlight',
+  'TOP:render': 'top:render',
+  'SOP:line': 'sop:line',
+  'SOP:circle': 'sop:circle',
+  'SOP:rectangle': 'sop:rectangle',
+  'SOP:grid': 'sop:grid',
+  'SOP:sphere': 'sop:sphere',
+  'SOP:box': 'sop:box',
+  'SOP:tube': 'sop:tube',
+  'SOP:torus': 'sop:torus',
+  'SOP:merge': 'sop:merge',
+  'SOP:transform': 'sop:transform',
+  'SOP:noise': 'sop:noise',
+  'SOP:copy': 'sop:copy',
+  'SOP:skin': 'sop:skin',
+  'SOP:add': 'sop:add',
+  'SOP:point': 'sop:point',
+  'SOP:facet': 'sop:facet',
+  'SOP:switch': 'sop:switch',
+  'SOP:null': 'sop:null',
+  'SOP:in': 'sop:in',
+  'SOP:out': 'sop:out',
+  'MAT:constant': 'mat:constant',
+  'MAT:line': 'mat:line',
+  'MAT:pointsprite': 'mat:pointsprite',
+  'MAT:wireframe': 'mat:wireframe',
+  'MAT:phong': 'mat:lit',
+  'MAT:pbr': 'mat:lit',
+  'MAT:switch': 'mat:switch',
+  'MAT:null': 'mat:null',
+  'MAT:out': 'mat:null',
   'DAT:text': 'dat:text',
   'DAT:table': 'dat:table',
   'DAT:select': 'dat:select',
@@ -92,6 +126,11 @@ type ParamRule =
   | { to: string }
   | { to: string; menu: Record<string, string> }
   | { toColor: string; channel: number };
+
+/** shared object-COMP transform page (TD tokens are 1:1 with ours) */
+const XFORM_RULES: Record<string, ParamRule> = Object.fromEntries(
+  ['tx', 'ty', 'tz', 'rx', 'ry', 'rz', 'sx', 'sy', 'sz', 'px', 'py', 'pz'].map((k) => [k, { to: k }]),
+);
 
 /** TD parm token → WebToe param, per mapped TD type. Unlisted parms are
  *  ignored (counted in the report). */
@@ -172,14 +211,103 @@ const PARAM_MAP: Record<string, Record<string, ParamRule>> = {
   'CHOP:switch': { index: { to: 'index' } },
   'CHOP:par': { op: { to: 'oppath' }, pars: { to: 'parnames' } },
   'DAT:select': { dat: { to: 'dat' } },
+  'COMP:geo': {
+    ...XFORM_RULES,
+    material: { to: 'material' },
+    render: { to: 'render' },
+    instancing: { to: 'instancing' },
+    instanceop: { to: 'instanceop' },
+  },
+  'COMP:cam': {
+    ...XFORM_RULES,
+    lookat: { to: 'lookat' },
+    vertfov: { to: 'fov' },
+    near: { to: 'near' },
+    far: { to: 'far' },
+    orthowidth: { to: 'orthowidth' },
+  },
+  'COMP:light': {
+    ...XFORM_RULES,
+    lighttype: { to: 'lighttype', menu: { point: 'point', distant: 'distant', cone: 'point' } },
+    dimmer: { to: 'dimmer' },
+    lightcolorr: { toColor: 'color', channel: 0 },
+    lightcolorg: { toColor: 'color', channel: 1 },
+    lightcolorb: { toColor: 'color', channel: 2 },
+  },
+  'COMP:ambient': {
+    dimmer: { to: 'dimmer' },
+    lightcolorr: { toColor: 'color', channel: 0 },
+    lightcolorg: { toColor: 'color', channel: 1 },
+    lightcolorb: { toColor: 'color', channel: 2 },
+  },
+  'TOP:render': {
+    camera: { to: 'camera' },
+    geometry: { to: 'geometry' },
+    lights: { to: 'lights' },
+    resolutionw: { to: 'resw' },
+    resolutionh: { to: 'resh' },
+    bgcolorr: { toColor: 'bgcolor', channel: 0 },
+    bgcolorg: { toColor: 'bgcolor', channel: 1 },
+    bgcolorb: { toColor: 'bgcolor', channel: 2 },
+    bgcolora: { toColor: 'bgcolor', channel: 3 },
+  },
+  'SOP:circle': {
+    radx: { to: 'radius' },
+    divs: { to: 'divisions' },
+    orient: { to: 'plane', menu: { xy: 'xy', zx: 'zx', yz: 'yz' } },
+  },
+  'SOP:sphere': { radx: { to: 'radius' }, rows: { to: 'rows' }, cols: { to: 'cols' } },
+  'SOP:grid': { rows: { to: 'rows' }, cols: { to: 'cols' }, sizex: { to: 'sizex' }, sizey: { to: 'sizey' } },
+  'SOP:box': { sizex: { to: 'sizex' }, sizey: { to: 'sizey' }, sizez: { to: 'sizez' } },
+  'SOP:tube': { rad1: { to: 'rad1' }, rad2: { to: 'rad2' }, height: { to: 'height' }, rows: { to: 'rows' }, cols: { to: 'cols' } },
+  'SOP:torus': { rad1: { to: 'rad1' }, rad2: { to: 'rad2' }, rows: { to: 'rows' }, cols: { to: 'cols' } },
+  'SOP:line': {
+    p1x: { to: 'p1x' }, p1y: { to: 'p1y' }, p1z: { to: 'p1z' },
+    p2x: { to: 'p2x' }, p2y: { to: 'p2y' }, p2z: { to: 'p2z' },
+    points: { to: 'points' },
+  },
+  'SOP:noise': { amp: { to: 'amount' }, period: { to: 'period' } },
+  'SOP:transform': {
+    tx: { to: 'tx' }, ty: { to: 'ty' }, tz: { to: 'tz' },
+    rx: { to: 'rx' }, ry: { to: 'ry' }, rz: { to: 'rz' },
+    sx: { to: 'sx' }, sy: { to: 'sy' }, sz: { to: 'sz' },
+  },
+  'SOP:switch': { index: { to: 'index' } },
+  'MAT:line': {
+    widthnear: { to: 'width' },
+    linenearcolorr: { toColor: 'color', channel: 0 },
+    linenearcolorg: { toColor: 'color', channel: 1 },
+    linenearcolorb: { toColor: 'color', channel: 2 },
+    linenearcolora: { toColor: 'color', channel: 3 },
+  },
+  'MAT:pointsprite': { pointsize: { to: 'pointsize' } },
+  'MAT:constant': {
+    colorr: { toColor: 'color', channel: 0 },
+    colorg: { toColor: 'color', channel: 1 },
+    colorb: { toColor: 'color', channel: 2 },
+    alpha: { toColor: 'color', channel: 3 },
+  },
+  'MAT:pbr': {
+    basecolorr: { toColor: 'basecolor', channel: 0 },
+    basecolorg: { toColor: 'basecolor', channel: 1 },
+    basecolorb: { toColor: 'basecolor', channel: 2 },
+    metallic: { to: 'metallic' },
+    roughness: { to: 'roughness' },
+  },
+  'MAT:phong': {
+    diffr: { toColor: 'basecolor', channel: 0 },
+    diffg: { toColor: 'basecolor', channel: 1 },
+    diffb: { toColor: 'basecolor', channel: 2 },
+  },
 };
+
 
 const STUB_FOR: Record<string, string> = {
   TOP: 'top:stub',
   CHOP: 'chop:stub',
-  SOP: 'comp:stub',
+  SOP: 'sop:stub',
   POP: 'comp:stub',
-  MAT: 'comp:stub',
+  MAT: 'mat:stub',
   COMP: 'comp:stub',
   DAT: 'dat:stub',
 };
@@ -330,7 +458,7 @@ export const toedirLoader: ProjectLoader = {
         const nj: NodeJSON = {
           name: raw.name,
           type,
-          family: (['TOP', 'CHOP', 'DAT'].includes(family) ? family : 'COMP') as Family,
+          family: (['TOP', 'CHOP', 'DAT', 'SOP', 'MAT'].includes(family) ? family : 'COMP') as Family,
           pos: [(raw.tile.x - ox) * POS_SCALE + 40, (-raw.tile.y - oy) * POS_SCALE + 40],
         };
         if (!mapped) nj.foreignType = raw.tdType;
@@ -341,7 +469,7 @@ export const toedirLoader: ProjectLoader = {
         for (const [k, v] of Object.entries(TYPE_PRESETS[raw.tdType] ?? {})) {
           params[k] = { mode: 'const', value: v };
         }
-        if (type === 'top:in' || type === 'chop:in') {
+        if (type === 'top:in' || type === 'chop:in' || type === 'sop:in') {
           const digits = raw.name.match(/^in(\d+)$/);
           if (digits) params.index = { mode: 'const', value: Number(digits[1]) - 1 };
         }

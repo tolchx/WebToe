@@ -55,9 +55,16 @@ const TYPE_MAP = {
   'CHOP:merge': 'chop:merge', 'CHOP:select': 'chop:select', 'CHOP:switch': 'chop:switch', 'CHOP:speed': 'chop:speed', 'CHOP:par': 'chop:par',
   'TOP:switch': 'top:switch', 'TOP:select': 'top:select', 'TOP:math': 'top:math', 'TOP:reorder': 'top:reorder', 'TOP:flip': 'top:flip',
   'DAT:table': 'dat:table', 'DAT:select': 'dat:select', 'DAT:null': 'dat:null', 'DAT:in': 'dat:in', 'DAT:out': 'dat:out', 'COMP:null': 'comp:container',
+  'COMP:geo': 'comp:geo', 'COMP:cam': 'comp:cam', 'COMP:light': 'comp:light', 'COMP:ambient': 'comp:ambientlight', 'TOP:render': 'top:render',
+  'SOP:line': 'sop:line', 'SOP:circle': 'sop:circle', 'SOP:rectangle': 'sop:rectangle', 'SOP:grid': 'sop:grid', 'SOP:sphere': 'sop:sphere',
+  'SOP:box': 'sop:box', 'SOP:tube': 'sop:tube', 'SOP:torus': 'sop:torus', 'SOP:merge': 'sop:merge', 'SOP:transform': 'sop:transform',
+  'SOP:noise': 'sop:noise', 'SOP:copy': 'sop:copy', 'SOP:skin': 'sop:skin', 'SOP:add': 'sop:add', 'SOP:point': 'sop:point',
+  'SOP:facet': 'sop:facet', 'SOP:switch': 'sop:switch', 'SOP:null': 'sop:null', 'SOP:in': 'sop:in', 'SOP:out': 'sop:out',
+  'MAT:constant': 'mat:constant', 'MAT:line': 'mat:line', 'MAT:pointsprite': 'mat:pointsprite', 'MAT:wireframe': 'mat:wireframe',
+  'MAT:phong': 'mat:lit', 'MAT:pbr': 'mat:lit', 'MAT:switch': 'mat:switch', 'MAT:null': 'mat:null', 'MAT:out': 'mat:null',
   'COMP:container': 'comp:container', 'COMP:base': 'comp:container', 'DAT:text': 'dat:text',
 };
-const STUB_FOR = { TOP: 'top:stub', CHOP: 'chop:stub', DAT: 'dat:stub' };
+const STUB_FOR = { TOP: 'top:stub', CHOP: 'chop:stub', DAT: 'dat:stub', SOP: 'sop:stub', MAT: 'mat:stub' };
 
 function parseNodeFile(text) {
   const lines = text.split('\n');
@@ -96,7 +103,7 @@ function readNetwork(dir) {
     const nj = {
       name,
       type: mapped ?? STUB_FOR[raw.family] ?? 'comp:stub',
-      family: ['TOP', 'CHOP', 'DAT'].includes(raw.family) ? raw.family : 'COMP',
+      family: ['TOP', 'CHOP', 'DAT', 'SOP', 'MAT'].includes(raw.family) ? raw.family : 'COMP',
       pos: [raw.tile.x, -raw.tile.y],
     };
     if (!mapped) nj.foreignType = raw.tdType;

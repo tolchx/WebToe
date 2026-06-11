@@ -1,0 +1,4 @@
+TOP:render
+tile 1000 600 130 90
+flags =  viewer 1 parlanguage 0
+end

@@ -32,7 +32,13 @@
 
 **Measured result of cycle 1 (R1+R2+DAT-lite + mode-bitfield decode): corpus coverage 32.3% → 47.1% of 28,698 nodes; the 213-node reference project went 56 → 88 runnable.**
 
-### R3 — the 3D pipeline *(the headline)*
+### R3 — the 3D pipeline ✅ *(shipped — full plan in [R3-3D-PLAN.md](R3-3D-PLAN.md))*
+
+Shipped: 19 SOPs (line/circle/grid/sphere/box/tube/torus/merge/transform/noise/copy/skin/add/point/facet/switch/null/in/out), 5 MAT shadings (constant/lit≈phong+pbr/line/points/wireframe + switch/null routing), geo/cam/light/ambient COMPs (TD xform tokens, look-at, SOP-point instancing per the crawled `instanceop` contract), Render TOP with TD pattern matching (`geo* ^geo7`), WebGL2 scene renderer (depth, VAO cache keyed by geometry version, instanced draws, 4 original shaders), auto-orbit 3D previews on every SOP/geo node, importer + committed-fixture coverage, example 10.
+
+**Measured: corpus coverage 47.1% → 62.3%** (prediction was ~65). The 2022 3D sketches: DNA 55%→71%, Fire Dance 65%→74% runnable. Declared v1 limits (each with follow-up): WebGL2-only scene pass, 1px lines, SOP-source instancing, no parent-transform inheritance, filein/GLSL-MAT stubs.
+
+*(original phase spec below, kept for reference)*
 Minimal-but-real forward renderer on the existing backend contract (no three.js — zero-dep stays):
 - `COMP:geo/camera/light/null(3D)`, transform hierarchy;
 - SOP core as typed-array geometry (CPU first, behind the wasm-ready kernel seam): `circle`, `line`, `rectangle`, `sphere`, `grid`, `merge`, `transform`, `noise`, `copy`, `switch`;

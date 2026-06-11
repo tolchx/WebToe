@@ -1,4 +1,4 @@
-export type Family = 'TOP' | 'CHOP' | 'COMP' | 'DAT';
+export type Family = 'TOP' | 'CHOP' | 'COMP' | 'DAT' | 'SOP' | 'MAT';
 
 export type ParamScalar = number | string | boolean;
 export type ParamVal = ParamScalar | number[];
@@ -51,7 +51,53 @@ export interface TextOut {
   text: string;
 }
 
-export type OpOutput = ChannelSet | TextureOut | TextOut | null;
+/** SOP geometry payload — typed-array-first (see docs/R3-3D-PLAN.md §1) */
+export interface GeometryData {
+  P: Float32Array;
+  N?: Float32Array;
+  uv?: Float32Array;
+  Cd?: Float32Array;
+  triangles?: Uint32Array;
+  lineStrips?: Uint32Array[];
+  renderPoints?: boolean;
+  version: number;
+}
+
+export interface MaterialSpec {
+  shading: 'constant' | 'lit' | 'line' | 'points' | 'wireframe';
+  color: [number, number, number, number];
+  map?: import('./passes').TextureHandle | null;
+  pointSize?: number;
+  lineWidth?: number;
+  metallic?: number;
+  roughness?: number;
+  emit?: [number, number, number];
+}
+
+export interface SceneLight {
+  kind: 'point' | 'directional' | 'ambient';
+  color: [number, number, number];
+  intensity: number;
+  position: [number, number, number];
+  direction: [number, number, number];
+}
+
+export interface SceneObject {
+  role: 'geo' | 'camera' | 'light';
+  model: Float32Array;
+  geo?: GeometryData;
+  geoKey?: string;
+  material?: MaterialSpec;
+  instances?: { count: number; translate: Float32Array; color?: Float32Array };
+  camera?: { view: Float32Array; proj: Float32Array };
+  light?: SceneLight;
+}
+
+export interface SopOut { kind: 'sop'; geo: GeometryData; }
+export interface MatOut { kind: 'mat'; mat: MaterialSpec; }
+export interface ObjOut { kind: 'obj'; obj: SceneObject; }
+
+export type OpOutput = ChannelSet | TextureOut | TextOut | SopOut | MatOut | ObjOut | null;
 
 export interface TimeContext {
   seconds: number;

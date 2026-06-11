@@ -1,0 +1,8 @@
+SOP:out
+tile 800 0 130 90
+flags =  viewer 1 parlanguage 0
+inputs
+{
+0 	skin1
+}
+end

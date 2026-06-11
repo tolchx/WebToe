@@ -160,6 +160,10 @@ export class WebGPUBackend implements GpuFacade {
     return t?.seeded ? t.prevHandle : null;
   }
 
+  renderScene(): TextureHandle {
+    throw new Error('3D rendering requires the WebGL2 backend in v1 — open with ?backend=webgl2');
+  }
+
   uploadMedia(node: NodeInst, source: TexImageSource, flipY = true): TextureHandle {
     const w = (source as { videoWidth?: number }).videoWidth
       ?? (source as { naturalWidth?: number }).naturalWidth

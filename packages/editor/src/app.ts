@@ -7,6 +7,7 @@ import { injectStyles } from './style';
 import { NetworkView } from './network';
 import { ParamPanel } from './params';
 import { Viewer } from './viewer';
+import { previewSpec } from './preview3d';
 
 export interface EditorOptions {
   /** examples shown in the toolbar menu */
@@ -322,6 +323,21 @@ export class EditorApp {
     setTimeout(() => t.remove(), 2600);
   }
 
+  /** Texture for any previewable output: TOPs directly, SOP/geo through the
+   *  auto-orbit preview scene (rendered once per node per frame). */
+  private texFor(node: NodeInst, out: import('@webtoe/core').OpOutput): import('@webtoe/core').TextureHandle | null {
+    const gpu = this.engine.gpu;
+    if (!gpu || !out) return null;
+    if (out.kind === 'top') return out.tex;
+    const geo = out.kind === 'sop' ? out.geo : out.kind === 'obj' && out.obj.geo ? out.obj.geo : null;
+    if (!geo || !geo.P.length) return null;
+    try {
+      return gpu.renderScene(node, previewSpec(geo, this.engine.time.seconds));
+    } catch {
+      return null; // backend without 3D support (webgpu v1)
+    }
+  }
+
   private loop = (): void => {
     this.engine.frame(performance.now() / 1000);
     const gpu = this.engine.gpu;
@@ -330,11 +346,19 @@ export class EditorApp {
     const rootRect = this.rootEl.getBoundingClientRect();
     const rel = (r: DOMRect) => ({ x: r.x - rootRect.x, y: r.y - rootRect.y, w: r.width, h: r.height });
 
+    // per-frame preview texture cache (a node may feed both viewer and thumb)
+    const texCache = new Map<number, import('@webtoe/core').TextureHandle | null>();
+    const cachedTexFor = (node: NodeInst, out: import('@webtoe/core').OpOutput) => {
+      if (!texCache.has(node.id)) texCache.set(node.id, this.texFor(node, out));
+      return texCache.get(node.id) ?? null;
+    };
+
     // viewer
-    const wantsTop = this.viewer.draw();
-    const vt = this.viewer.target?.output;
-    if (gpu && wantsTop && vt && vt.kind === 'top') {
-      gpu.blitToCanvas(vt.tex, rel(this.viewer.el.getBoundingClientRect()));
+    this.viewer.draw();
+    const vTarget = this.viewer.target;
+    if (gpu && vTarget?.output && ['top', 'sop', 'obj'].includes(vTarget.output.kind)) {
+      const tex = cachedTexFor(vTarget, vTarget.output);
+      if (tex) gpu.blitToCanvas(tex, rel(this.viewer.el.getBoundingClientRect()));
     }
 
     // live node previews at full frame rate, clipped to the network panel
@@ -342,12 +366,13 @@ export class EditorApp {
       const netClip = rel(this.netEl.getBoundingClientRect());
       for (const { node, el } of this.network.thumbTargets()) {
         const out = this.engine.cook(node);
-        if (!out || out.kind !== 'top') continue;
+        const tex = out ? cachedTexFor(node, out) : null;
+        if (!tex) continue;
         const r = rel(el.getBoundingClientRect());
         if (r.x + r.w < netClip.x || r.x > netClip.x + netClip.w
           || r.y + r.h < netClip.y || r.y > netClip.y + netClip.h) continue;
         if (r.w < 4 || r.h < 4) continue;
-        gpu.blitToCanvas(out.tex, { ...r, clip: netClip });
+        gpu.blitToCanvas(tex, { ...r, clip: netClip });
       }
     }
 

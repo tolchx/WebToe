@@ -61,6 +61,8 @@ function stubTypeFor(family?: import('./types').Family): string {
     case 'TOP': return 'top:stub';
     case 'CHOP': return 'chop:stub';
     case 'DAT': return 'dat:stub';
+    case 'SOP': return 'sop:stub';
+    case 'MAT': return 'mat:stub';
     default: return 'comp:stub';
   }
 }

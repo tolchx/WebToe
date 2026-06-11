@@ -5,6 +5,8 @@ export const FAMILY_COLORS: Record<string, string> = {
   CHOP: '#4fb286',
   COMP: '#8a8a93',
   DAT: '#d2699e',
+  SOP: '#5e8bb8',
+  MAT: '#c9a84c',
 };
 
 const CSS = `

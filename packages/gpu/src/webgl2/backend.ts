@@ -1,6 +1,7 @@
 import type {
-  BlitRect, GpuFacade, NodeInst, ShaderSources, TextureHandle, TexturePassSpec,
+  BlitRect, GpuFacade, NodeInst, ScenePassSpec, ShaderSources, TextureHandle, TexturePassSpec,
 } from '@webtoe/core';
+import { SceneRenderer } from './scene';
 
 /**
  * WebGL2 implementation of the backend-agnostic pass contract.
@@ -13,6 +14,7 @@ interface Target {
   curr: WebGLTexture;
   prev: WebGLTexture;
   fbo: WebGLFramebuffer;
+  depth: WebGLRenderbuffer | null;
   w: number;
   h: number;
   currHandle: TextureHandle;
@@ -125,6 +127,29 @@ export class WebGL2Backend implements GpuFacade {
     return t.prevHandle;
   }
 
+  private scene: SceneRenderer | null = null;
+
+  renderScene(node: NodeInst, spec: ScenePassSpec): TextureHandle {
+    const gl = this.gl;
+    this.scene ??= new SceneRenderer(gl);
+    const t = this.ensureTarget(node, 'main', spec.output.width, spec.output.height);
+    const depth = this.ensureDepth(t);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, t.fbo);
+    gl.framebufferTexture2D(gl.FRAMEBUFFER, gl.COLOR_ATTACHMENT0, gl.TEXTURE_2D, t.prev, 0);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, depth);
+    gl.viewport(0, 0, t.w, t.h);
+    this.scene.render(spec, (id) => this.textures.get(id) ?? null);
+    gl.framebufferRenderbuffer(gl.FRAMEBUFFER, gl.DEPTH_ATTACHMENT, gl.RENDERBUFFER, null);
+    gl.bindFramebuffer(gl.FRAMEBUFFER, null);
+    const oldCurr = t.curr, oldCurrHandle = t.currHandle;
+    t.curr = t.prev;
+    t.currHandle = t.prevHandle;
+    t.prev = oldCurr;
+    t.prevHandle = oldCurrHandle;
+    t.seeded = true;
+    return t.currHandle;
+  }
+
   uploadMedia(node: NodeInst, source: TexImageSource, flipY = true): TextureHandle {
     const gl = this.gl;
     const w = (source as { videoWidth?: number }).videoWidth
@@ -228,6 +253,7 @@ export class WebGL2Backend implements GpuFacade {
       if (key.startsWith(`${node.id}:`)) {
         gl.deleteTexture(t.curr);
         gl.deleteTexture(t.prev);
+        if (t.depth) gl.deleteRenderbuffer(t.depth);
         gl.deleteFramebuffer(t.fbo);
         this.textures.delete(t.currHandle.id);
         this.textures.delete(t.prevHandle.id);
@@ -244,9 +270,11 @@ export class WebGL2Backend implements GpuFacade {
 
   dispose(): void {
     const gl = this.gl;
+    this.scene?.dispose();
     for (const t of this.targets.values()) {
       gl.deleteTexture(t.curr);
       gl.deleteTexture(t.prev);
+      if (t.depth) gl.deleteRenderbuffer(t.depth);
       gl.deleteFramebuffer(t.fbo);
     }
     for (const m of this.mediaTargets.values()) gl.deleteTexture(m.tex);
@@ -278,7 +306,7 @@ export class WebGL2Backend implements GpuFacade {
       const prev = this.makeTexture(W, H);
       const fbo = gl.createFramebuffer()!;
       t = {
-        curr, prev, fbo, w: W, h: H,
+        curr, prev, fbo, depth: null, w: W, h: H,
         currHandle: this.handleFor(curr, W, H),
         prevHandle: this.handleFor(prev, W, H),
         seeded: false,
@@ -286,6 +314,17 @@ export class WebGL2Backend implements GpuFacade {
       this.targets.set(key, t);
     }
     return t;
+  }
+
+  private ensureDepth(t: Target): WebGLRenderbuffer {
+    if (t.depth) return t.depth;
+    const gl = this.gl;
+    const rb = gl.createRenderbuffer()!;
+    gl.bindRenderbuffer(gl.RENDERBUFFER, rb);
+    gl.renderbufferStorage(gl.RENDERBUFFER, gl.DEPTH_COMPONENT24, t.w, t.h);
+    gl.bindRenderbuffer(gl.RENDERBUFFER, null);
+    t.depth = rb;
+    return rb;
   }
 
   private makeTexture(w: number, h: number): WebGLTexture {

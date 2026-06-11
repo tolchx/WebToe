@@ -1,0 +1,108 @@
+{
+ "app": "webtoe",
+ "version": 1,
+ "root": {
+  "nodes": [
+   { "name": "mat_line", "type": "mat:line", "family": "MAT", "pos": [40, 420],
+     "params": { "color": { "mode": "const", "value": [0.85, 0.95, 1, 1] }, "pointsize": { "mode": "const", "value": 2 } } },
+   { "name": "mat_balls", "type": "mat:lit", "family": "MAT", "pos": [210, 420],
+     "params": { "basecolor": { "mode": "const", "value": [0.95, 0.5, 0.25, 1] },
+                 "roughness": { "mode": "const", "value": 0.35 },
+                 "metallic": { "mode": "const", "value": 0.2 } } },
+
+   { "name": "geo_ribbon", "type": "comp:geo", "family": "COMP", "pos": [40, 40],
+     "params": { "material": { "mode": "const", "value": "mat_line" } },
+     "children": [
+      { "name": "circle1", "type": "sop:circle", "family": "SOP", "pos": [40, 40],
+        "params": { "radius": { "mode": "const", "value": 0.9 },
+                    "divisions": { "mode": "const", "value": 96 },
+                    "closed": { "mode": "const", "value": false },
+                    "plane": { "mode": "const", "value": "zx" } } },
+      { "name": "rise1", "type": "sop:transform", "family": "SOP", "pos": [220, 40],
+        "params": { "ty": { "mode": "const", "value": 0.45 }, "sx": { "mode": "const", "value": 0.72 },
+                    "sz": { "mode": "const", "value": 0.72 },
+                    "rz": { "mode": "const", "value": 8 } } },
+      { "name": "rise2", "type": "sop:transform", "family": "SOP", "pos": [220, 140],
+        "params": { "ty": { "mode": "const", "value": 0.9 }, "sx": { "mode": "const", "value": 0.45 },
+                    "sz": { "mode": "const", "value": 0.45 },
+                    "rz": { "mode": "const", "value": 16 } } },
+      { "name": "merge1", "type": "sop:merge", "family": "SOP", "pos": [400, 90] },
+      { "name": "wobble", "type": "sop:noise", "family": "SOP", "pos": [580, 90],
+        "params": { "amount": { "mode": "const", "value": 0.12 },
+                    "period": { "mode": "const", "value": 0.7 },
+                    "diry": { "mode": "const", "value": 1 },
+                    "phase": { "mode": "expr", "value": 0, "expr": "time.seconds * 0.6" } } },
+      { "name": "out2", "type": "sop:out", "family": "SOP", "pos": [760, 90] }
+     ],
+     "wires": [
+      { "from": "circle1:0", "to": "rise1:0" },
+      { "from": "circle1:0", "to": "rise2:0" },
+      { "from": "circle1:0", "to": "merge1:0" },
+      { "from": "rise1:0", "to": "merge1:1" },
+      { "from": "rise2:0", "to": "merge1:2" },
+      { "from": "merge1:0", "to": "wobble:0" },
+      { "from": "wobble:0", "to": "out2:0" }
+     ] },
+
+   { "name": "geo_balls", "type": "comp:geo", "family": "COMP", "pos": [240, 40],
+     "params": { "material": { "mode": "const", "value": "mat_balls" },
+                 "instancing": { "mode": "const", "value": true },
+                 "instanceop": { "mode": "const", "value": "./scatter" } },
+     "children": [
+      { "name": "ball", "type": "sop:sphere", "family": "SOP", "pos": [40, 40],
+        "params": { "radius": { "mode": "const", "value": 0.045 },
+                    "rows": { "mode": "const", "value": 10 }, "cols": { "mode": "const", "value": 14 } } },
+      { "name": "out3", "type": "sop:out", "family": "SOP", "pos": [220, 40] },
+      { "name": "grid1", "type": "sop:grid", "family": "SOP", "pos": [40, 160],
+        "params": { "rows": { "mode": "const", "value": 9 }, "cols": { "mode": "const", "value": 9 },
+                    "sizex": { "mode": "const", "value": 2.4 }, "sizey": { "mode": "const", "value": 2.4 } } },
+      { "name": "flatten", "type": "sop:transform", "family": "SOP", "pos": [220, 160],
+        "params": { "rx": { "mode": "const", "value": -90 } } },
+      { "name": "scatter", "type": "sop:noise", "family": "SOP", "pos": [400, 160],
+        "params": { "amount": { "mode": "const", "value": 0.5 },
+                    "period": { "mode": "const", "value": 1.1 },
+                    "diry": { "mode": "const", "value": 1 },
+                    "phase": { "mode": "expr", "value": 0, "expr": "time.seconds * 0.4" } } }
+     ],
+     "wires": [
+      { "from": "ball:0", "to": "out3:0" },
+      { "from": "grid1:0", "to": "flatten:0" },
+      { "from": "flatten:0", "to": "scatter:0" }
+     ] },
+
+   { "name": "cam1", "type": "comp:cam", "family": "COMP", "pos": [440, 40],
+     "params": { "tx": { "mode": "expr", "value": 0, "expr": "sin(time.seconds * 0.25) * 3.4" },
+                 "tz": { "mode": "expr", "value": 3.4, "expr": "cos(time.seconds * 0.25) * 3.4" },
+                 "ty": { "mode": "const", "value": 1.4 },
+                 "lookat": { "mode": "const", "value": "geo_ribbon" },
+                 "fov": { "mode": "const", "value": 42 } } },
+   { "name": "key1", "type": "comp:light", "family": "COMP", "pos": [440, 160],
+     "params": { "tx": { "mode": "const", "value": 2.5 }, "ty": { "mode": "const", "value": 3 },
+                 "tz": { "mode": "const", "value": 2 },
+                 "color": { "mode": "const", "value": [1, 0.9, 0.8, 1] },
+                 "dimmer": { "mode": "const", "value": 1.1 } } },
+   { "name": "amb1", "type": "comp:ambientlight", "family": "COMP", "pos": [440, 280],
+     "params": { "color": { "mode": "const", "value": [0.6, 0.7, 1, 1] },
+                 "dimmer": { "mode": "const", "value": 0.25 } } },
+
+   { "name": "render1", "type": "top:render", "family": "TOP", "pos": [640, 40],
+     "params": { "camera": { "mode": "const", "value": "cam1" },
+                 "bgcolor": { "mode": "const", "value": [0.03, 0.03, 0.05, 1] } } },
+   { "name": "glow", "type": "top:blur", "family": "TOP", "pos": [820, 140],
+     "params": { "size": { "mode": "const", "value": 8 }, "passes": { "mode": "const", "value": 2 } } },
+   { "name": "mix1", "type": "top:composite", "family": "TOP", "pos": [1000, 40],
+     "params": { "operation": { "mode": "const", "value": "add" } } },
+   { "name": "out1", "type": "top:out", "family": "TOP", "pos": [1180, 40], "flags": { "display": true } }
+  ],
+  "wires": [
+   { "from": "render1:0", "to": "glow:0" },
+   { "from": "render1:0", "to": "mix1:0" },
+   { "from": "glow:0", "to": "mix1:1" },
+   { "from": "mix1:0", "to": "out1:0" }
+  ]
+ },
+ "meta": {
+  "title": "3d lines",
+  "comment": "the R3 pipeline end to end: skinned/wobbling line ribbons (SOPs inside a geo COMP with a line MAT), noise-scattered instanced spheres (SOP-point instancing), an orbiting look-at camera, point+ambient lights, render TOP, and a 2D glow post chain"
+ }
+}

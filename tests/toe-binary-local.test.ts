@@ -74,7 +74,7 @@ describe.skipIf(!toeexpand)('.toe binary integration (requires local TouchDesign
       const json = JSON.parse(readFileSync(out, 'utf8'));
       expect(json.app).toBe('webtoe');
       const count = (ns: NodeJSON[]): number => ns.reduce((a, n) => a + 1 + (n.children ? count(n.children) : 0), 0);
-      expect(count(json.root.nodes)).toBe(13);
+      expect(count(json.root.nodes)).toBe(23);
       const project1 = json.root.nodes.find((n: NodeJSON) => n.name === 'project1');
       expect(project1.children.some((n: NodeJSON) => n.name === 'mirror1' && n.type === 'top:stub')).toBe(true);
       // CLI output loads into the engine graph
