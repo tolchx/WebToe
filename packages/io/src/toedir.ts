@@ -51,8 +51,16 @@ const TYPE_MAP: Record<string, string> = {
   'TOP:null': 'top:null',
   'TOP:out': 'top:out',
   'TOP:in': 'top:in',
+  'TOP:switch': 'top:switch',
+  'TOP:select': 'top:select',
+  'TOP:math': 'top:math',
+  'TOP:reorder': 'top:reorder',
+  'TOP:flip': 'top:flip',
   'CHOP:in': 'chop:in',
   'CHOP:out': 'chop:out',
+  'CHOP:switch': 'chop:switch',
+  'CHOP:speed': 'chop:speed',
+  'CHOP:par': 'chop:par',
   'CHOP:lfo': 'chop:lfo',
   'CHOP:noise': 'chop:noise',
   'CHOP:math': 'chop:math',
@@ -64,7 +72,13 @@ const TYPE_MAP: Record<string, string> = {
   'CHOP:null': 'chop:merge', // passthrough approximation
   'COMP:container': 'comp:container',
   'COMP:base': 'comp:container',
+  'COMP:null': 'comp:container',
   'DAT:text': 'dat:text',
+  'DAT:table': 'dat:table',
+  'DAT:select': 'dat:select',
+  'DAT:null': 'dat:null',
+  'DAT:in': 'dat:in',
+  'DAT:out': 'dat:out',
 };
 
 /** implied parameter presets for collapsed type mappings */
@@ -145,6 +159,12 @@ const PARAM_MAP: Record<string, Record<string, ParamRule>> = {
   },
   'CHOP:lag': { lag1: { to: 'lagup' }, lag2: { to: 'lagdown' } },
   'CHOP:select': { channames: { to: 'channames' } },
+  'TOP:switch': { index: { to: 'index' } },
+  'TOP:select': { top: { to: 'top' } },
+  'TOP:flip': { flipx: { to: 'flipx' }, flipy: { to: 'flipy' } },
+  'CHOP:switch': { index: { to: 'index' } },
+  'CHOP:par': { op: { to: 'oppath' }, pars: { to: 'parnames' } },
+  'DAT:select': { dat: { to: 'dat' } },
 };
 
 const STUB_FOR: Record<string, string> = {
@@ -269,6 +289,14 @@ export const toedirLoader: ProjectLoader = {
       if (parmFile) node.parms = parseParmFile(await parmFile.text());
       const textFile = byPath.get(`${dir ? dir + '/' : ''}${name}.text`);
       if (textFile) node.text = await textFile.text();
+      if (node.text === undefined) {
+        // table DATs store their rows in a .table sidecar (text unless baked binary)
+        const tableFile = byPath.get(`${dir ? dir + '/' : ''}${name}.table`);
+        if (tableFile) {
+          const t = await tableFile.text();
+          if (!t.includes('\0')) node.text = t;
+        }
+      }
       net.set(name, node);
     }
 

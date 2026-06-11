@@ -194,6 +194,69 @@ export const chopOps: OpSpec[] = [
   },
 
   {
+    type: 'chop:switch',
+    family: F,
+    label: 'switch',
+    inputs: { min: 1, max: 4 },
+    params: [{ key: 'index', type: 'int', default: 0, min: 0, max: 3 }],
+    cook(ctx) {
+      const i = Math.max(0, Math.min(ctx.inputs.length - 1, Math.round(ctx.paramNum('index'))));
+      return asChop(ctx.inputs[i]) ?? asChop(ctx.inputs.find((x) => x && x.kind === 'chop') ?? null);
+    },
+  },
+
+  {
+    type: 'chop:speed',
+    family: F,
+    label: 'speed',
+    inputs: { min: 1, max: 1 },
+    alwaysCook: true,
+    params: [{ key: 'rate', type: 'float', default: 1, min: -10, max: 10 }],
+    cook(ctx) {
+      // integrate input channels over time (TD speed CHOP first-order behavior)
+      const input = asChop(ctx.inputs[0]);
+      if (!input) return channels([]);
+      const st = ctx.node.state as { acc?: Map<string, number> };
+      st.acc ??= new Map();
+      const rate = ctx.paramNum('rate');
+      const out: [string, number][] = input.channels.map((ch) => {
+        const v = ch.data[ch.data.length - 1] ?? 0;
+        const acc = (st.acc!.get(ch.name) ?? 0) + v * rate * ctx.time.delta;
+        st.acc!.set(ch.name, acc);
+        return [ch.name, acc];
+      });
+      return channels(out, input.rate);
+    },
+  },
+
+  {
+    type: 'chop:par',
+    family: F,
+    label: 'parameter',
+    inputs: { min: 0, max: 0 },
+    alwaysCook: true,
+    params: [
+      { key: 'oppath', type: 'string', default: '..' },
+      { key: 'parnames', type: 'string', default: '*' },
+    ],
+    cook(ctx) {
+      const target = ctx.engine.graph.resolve(ctx.paramStr('oppath'), ctx.node);
+      if (!target) return channels([]);
+      const patterns = ctx.paramStr('parnames').trim().split(/\s+/).filter(Boolean);
+      const match = (name: string) => patterns.some((p) =>
+        new RegExp(`^${p.replace(/[.+^${}()|\\[\]]/g, '\\$&').replace(/\*/g, '.*')}$`).test(name));
+      const out: [string, number][] = [];
+      for (const [key] of target.params) {
+        if (!match(key)) continue;
+        const v = ctx.engine.param(target, key);
+        const n = typeof v === 'number' ? v : typeof v === 'boolean' ? (v ? 1 : 0) : Number(v);
+        if (Number.isFinite(n)) out.push([key, n]);
+      }
+      return channels(out);
+    },
+  },
+
+  {
     type: 'chop:in',
     family: F,
     label: 'in',

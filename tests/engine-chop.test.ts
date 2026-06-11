@@ -100,6 +100,60 @@ describe('engine + CHOP cooking', () => {
     expect(sample(out, 'lmb')).toBe(1);
   });
 
+  it('chop:switch picks the indexed input (expression-drivable)', () => {
+    const e = new Engine();
+    const a = e.graph.create('chop:constant');
+    a.params.get('value0')!.value = 1;
+    const b = e.graph.create('chop:constant');
+    b.params.get('value0')!.value = 2;
+    const sw = e.graph.create('chop:switch');
+    e.graph.connect(a, sw, 0);
+    e.graph.connect(b, sw, 1);
+    sw.params.get('index')!.value = 1;
+    const out = liveCook(e, sw, [0]);
+    expect(sample(out, 'chan1')).toBe(2);
+  });
+
+  it('chop:speed integrates its input over time', () => {
+    const e = new Engine();
+    const c = e.graph.create('chop:constant');
+    c.params.get('value0')!.value = 2;
+    const sp = e.graph.create('chop:speed');
+    e.graph.connect(c, sp, 0);
+    e.liveRoots.add(sp);
+    e.frame(0);
+    for (let i = 1; i <= 60; i++) e.frame(i / 60);
+    const v = sample(sp.output as ChannelSet, 'chan1');
+    expect(v).toBeGreaterThan(1.5); // ≈ 2/s integrated over ~1s
+    expect(v).toBeLessThan(2.5);
+  });
+
+  it('chop:par reads another node’s parameters as channels', () => {
+    const e = new Engine();
+    const lfo = e.graph.create('chop:lfo', undefined, 'wob');
+    lfo.params.get('frequency')!.value = 3.5;
+    const par = e.graph.create('chop:par');
+    par.params.get('oppath')!.value = 'wob';
+    par.params.get('parnames')!.value = 'freq* amp*';
+    const out = liveCook(e, par, [0]);
+    expect(sample(out, 'frequency')).toBe(3.5);
+    expect(sample(out, 'amplitude')).toBe(1);
+    expect(out.channels.length).toBe(2);
+  });
+
+  it('dat passthrough chain: table → select → null', () => {
+    const e = new Engine();
+    const table = e.graph.create('dat:table');
+    table.text = 'a\tb\n1\t2';
+    const sel = e.graph.create('dat:select');
+    sel.params.get('dat')!.value = 'table1';
+    const nul = e.graph.create('dat:null');
+    e.graph.connect(sel, nul, 0);
+    e.liveRoots.add(nul);
+    e.frame(0);
+    expect(nul.output).toMatchObject({ kind: 'dat', text: 'a\tb\n1\t2' });
+  });
+
   it('bypass passes input through untouched', () => {
     const e = new Engine();
     const c = e.graph.create('chop:constant');

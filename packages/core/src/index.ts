@@ -9,8 +9,9 @@ export {
   type OpSpec, type CookCtx,
 } from './registry';
 export {
-  compileExpr, makeChannelIndexable, translateTdExpr, ExprError,
+  compileExpr, makeChannelIndexable, translateTdExpr, zeroScope, zeroNodeRef, ExprError,
   type CompiledExpr, type ExprScope, type ChannelIndexable, type TdTranslation,
+  type NodeRef, type ParIndexable,
 } from './expr';
 export { Engine } from './engine';
 export { graphToJSON, graphFromJSON, FORMAT_VERSION, LoadError } from './serialize';

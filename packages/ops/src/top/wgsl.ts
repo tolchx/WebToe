@@ -271,6 +271,67 @@ fn lum(uv: vec2f) -> f32 {
   return edges;
 }`;
 
+export const mathWgsl = `
+struct Ops { u_count: vec4f, u_gain: vec4f, u_offset: vec4f, u_op: vec4f }
+@group(0) @binding(1) var<uniform> P: Ops;
+@group(0) @binding(2) var samp: sampler;
+@group(0) @binding(3) var tex0: texture_2d<f32>;
+@group(0) @binding(4) var tex1: texture_2d<f32>;
+@group(0) @binding(5) var tex2: texture_2d<f32>;
+@group(0) @binding(6) var tex3: texture_2d<f32>;
+fn combine(a: vec3f, b: vec3f) -> vec3f {
+  let op = P.u_op.x;
+  if (op < 0.5)      { return a + b; }
+  else if (op < 1.5) { return a - b; }
+  else if (op < 2.5) { return a * b; }
+  else if (op < 3.5) { return a + b; }
+  else if (op < 4.5) { return max(a, b); }
+  else if (op < 5.5) { return min(a, b); }
+  return pow(max(a, vec3f(0.0)), b);
+}
+@fragment fn fs(in: VOut) -> @location(0) vec4f {
+  let c0 = textureSample(tex0, samp, in.uv);
+  let l1 = textureSample(tex1, samp, in.uv).rgb;
+  let l2 = textureSample(tex2, samp, in.uv).rgb;
+  let l3 = textureSample(tex3, samp, in.uv).rgb;
+  var c = c0.rgb;
+  if (P.u_count.x > 1.5) { c = combine(c, l1); }
+  if (P.u_count.x > 2.5) { c = combine(c, l2); }
+  if (P.u_count.x > 3.5) { c = combine(c, l3); }
+  if (P.u_op.x > 2.5 && P.u_op.x < 3.5) { c = c / max(P.u_count.x, 1.0); }
+  return vec4f(c * P.u_gain.x + P.u_offset.x, c0.a);
+}`;
+
+export const reorderWgsl = `
+struct Ops { u_sel: vec4f }
+@group(0) @binding(1) var<uniform> P: Ops;
+@group(0) @binding(2) var samp: sampler;
+@group(0) @binding(3) var tex0: texture_2d<f32>;
+fn pick(c: vec4f, k: f32) -> f32 {
+  if (k < 0.5) { return c.r; }
+  else if (k < 1.5) { return c.g; }
+  else if (k < 2.5) { return c.b; }
+  else if (k < 3.5) { return c.a; }
+  else if (k < 4.5) { return 0.0; }
+  return 1.0;
+}
+@fragment fn fs(in: VOut) -> @location(0) vec4f {
+  let c = textureSample(tex0, samp, in.uv);
+  return vec4f(pick(c, P.u_sel.x), pick(c, P.u_sel.y), pick(c, P.u_sel.z), pick(c, P.u_sel.w));
+}`;
+
+export const flipWgsl = `
+struct Ops { u_flipx: vec4f, u_flipy: vec4f }
+@group(0) @binding(1) var<uniform> P: Ops;
+@group(0) @binding(2) var samp: sampler;
+@group(0) @binding(3) var tex0: texture_2d<f32>;
+@fragment fn fs(in: VOut) -> @location(0) vec4f {
+  var uv = in.uv;
+  if (P.u_flipx.x > 0.5) { uv.x = 1.0 - uv.x; }
+  if (P.u_flipy.x > 0.5) { uv.y = 1.0 - uv.y; }
+  return textureSample(tex0, samp, uv);
+}`;
+
 export const placeholderWgsl = `
 struct Ops { u_tint: vec4f }
 @group(0) @binding(1) var<uniform> P: Ops;

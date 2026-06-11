@@ -1,10 +1,22 @@
 import { describe, expect, it } from 'vitest';
-import { compileExpr, makeChannelIndexable, translateTdExpr, type ExprScope } from '@webtoe/core';
+import { compileExpr, translateTdExpr, zeroNodeRef, type ExprScope, type NodeRef } from '@webtoe/core';
+
+function refWith(channels: number, pars: Record<string, number | string> = {}): NodeRef {
+  return new Proxy({ name: 'n', path: '/n' } as NodeRef, {
+    get: (t, prop) => {
+      if (prop === 'name' || prop === 'path') return t[prop as 'name'];
+      if (prop === 'par') return new Proxy({}, { get: (_p, k) => pars[String(k)] ?? 0 });
+      if (typeof prop === 'symbol') return undefined;
+      return channels;
+    },
+  });
+}
 
 const scope = (over: Partial<ExprScope> = {}): ExprScope => ({
   time: { seconds: 2, frame: 120, delta: 1 / 60, fps: 60 },
-  me: { name: 'n', path: '/n' },
-  op: () => makeChannelIndexable(() => 0.5),
+  me: zeroNodeRef(),
+  op: () => refWith(0.5),
+  parent: () => refWith(0, { tx: 3, label: 'hi' }),
   ...over,
 });
 
@@ -48,12 +60,29 @@ describe('TD Python translation', () => {
     expect(t.ok).toBe(true);
   });
 
+  it('translates the v2 idioms: par access, parent(), ternary, boolean ops', () => {
+    expect(translateTdExpr("op('base1').par.tx")).toEqual({ ok: true, expr: "op('base1').par.tx" });
+    expect(translateTdExpr('parent().par.Speed * 2')).toEqual({ ok: true, expr: 'parent().par.Speed * 2' });
+    expect(translateTdExpr('me.par.tx + parent(2).par.ty').ok).toBe(true);
+    expect(translateTdExpr('1 if absTime.seconds > 2 else 0'))
+      .toEqual({ ok: true, expr: '((time.seconds > 2) ? (1) : (0))' });
+    expect(translateTdExpr('True and not False').ok).toBe(true);
+    expect(translateTdExpr('mod.math.sin(absTime.seconds)')).toEqual({ ok: true, expr: 'sin(time.seconds)' });
+    expect(translateTdExpr('int(absTime.seconds)')).toEqual({ ok: true, expr: 'trunc(time.seconds)' });
+  });
+
+  it('evaluates par access through the scope', () => {
+    expect(compileExpr('parent().par.tx * 2')(scope())).toBe(6);
+    expect(compileExpr("parent().par.label + '!'")(scope())).toBe('hi!');
+  });
+
   it('refuses what it cannot faithfully translate', () => {
-    expect(translateTdExpr("op('base1').par.tx").ok).toBe(false);
     expect(translateTdExpr('[x for x in range(3)]').ok).toBe(false);
     expect(translateTdExpr('1 if me.digits else 0').ok).toBe(false);
     expect(translateTdExpr('absTime.frame // 2').ok).toBe(false); // python floor-div
     expect(translateTdExpr("str(me.name)").ok).toBe(false);
+    expect(translateTdExpr("f'scripts/{me.name}.py'").ok).toBe(false);
+    expect(translateTdExpr('1 if a else 2 if b else 3').ok).toBe(false); // nested conditional
     expect(translateTdExpr('').ok).toBe(false);
   });
 });

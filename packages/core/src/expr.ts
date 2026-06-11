@@ -10,10 +10,22 @@
 
 export type CompiledExpr = (scope: ExprScope) => unknown;
 
+/** Resolved parameter access: `proxy.someparam` → current value (0 if unknown). */
+export type ParIndexable = Record<string, number | string | boolean>;
+
+/** Node reference inside expressions: channels by index/name, plus `.par`. */
+export interface NodeRef {
+  name: string;
+  path: string;
+  par: ParIndexable;
+  [channel: string | number]: unknown;
+}
+
 export interface ExprScope {
   time: { seconds: number; frame: number; delta: number; fps: number };
-  me: { name: string; path: string };
-  op: (path: string) => ChannelIndexable;
+  me: NodeRef;
+  op: (path: string) => NodeRef;
+  parent: (level?: number) => NodeRef;
   [k: string]: unknown;
 }
 
@@ -24,7 +36,7 @@ const MATH_SCOPE: Record<string, unknown> = {
   PI: Math.PI,
   abs: Math.abs, sin: Math.sin, cos: Math.cos, tan: Math.tan,
   asin: Math.asin, acos: Math.acos, atan: Math.atan, atan2: Math.atan2,
-  floor: Math.floor, ceil: Math.ceil, round: Math.round,
+  floor: Math.floor, ceil: Math.ceil, round: Math.round, trunc: Math.trunc,
   min: Math.min, max: Math.max, pow: Math.pow, sqrt: Math.sqrt,
   exp: Math.exp, log: Math.log, sign: Math.sign,
   clamp: (v: number, lo: number, hi: number) => Math.min(hi, Math.max(lo, v)),
@@ -37,7 +49,7 @@ const MATH_SCOPE: Record<string, unknown> = {
   },
 };
 
-const SCOPE_KEYS = ['time', 'me', 'op', ...Object.keys(MATH_SCOPE)];
+const SCOPE_KEYS = ['time', 'me', 'op', 'parent', ...Object.keys(MATH_SCOPE)];
 
 const cache = new Map<string, CompiledExpr>();
 
@@ -82,13 +94,16 @@ export interface TdTranslation {
 
 /** Patterns that mark an expression as beyond the translatable subset. */
 const TD_UNSUPPORTED = [
-  /\.par\b/, /\bparent\(/, /\bmod\(/, /\bme\.digits\b/, /\bme\.inputVal\b/,
-  /\blambda\b/, /\bfor\b/, /\bif\b/, /\belse\b/, /\bdef\b/, /\bstr\(/, /\bint\(/,
-  /\blen\(/, /\btdu\./, /\bvar\(/, /\bext\./, /\bproject\./, /\bapp\./, /'''|"""/,
+  /\bmod\(/, /\bme\.digits\b/, /\bme\.inputVal\b/, /\bme\.curPar\b/,
+  /\blambda\b/, /\bfor\b/, /\bdef\b/, /\bstr\(/, /\blen\(/,
+  /\btdu\./, /\bvar\(/, /\bext\./, /\bproject\./, /\bapp\./, /\bop\.\w/, /'''|"""/,
+  /\bf['"]/, // f-strings
+  /\.menuIndex\b/, /\.panel\b/, /\bis\b/, /\bin\b/,
   /\/\//, // Python floor-div: regex-rewriting operand boundaries is unsafe; leave disabled
 ];
 
 const TD_REWRITES: [RegExp, string][] = [
+  [/\bmod\.math\./g, ''], // TD's `mod.math.sin(...)` module-access form
   [/\babsTime\.seconds\b/g, 'time.seconds'],
   [/\babsTime\.frame\b/g, 'time.frame'],
   [/\bme\.time\.seconds\b/g, 'time.seconds'],
@@ -97,8 +112,21 @@ const TD_REWRITES: [RegExp, string][] = [
   [/\bmath\.([a-z][a-z0-9_]*)/g, '$1'],
   [/\bTrue\b/g, 'true'],
   [/\bFalse\b/g, 'false'],
-  [/\*\*/g, '**'], // JS supports ** natively
+  [/\bNone\b/g, 'null'],
+  [/\bint\(/g, 'trunc('],
+  [/\bfloat\(/g, '('],
+  [/\band\b/g, '&&'],
+  [/\bor\b/g, '||'],
+  [/\bnot\s+/g, '!'],
 ];
+
+/** Python conditional expression `A if C else B` → `((C) ? (A) : (B))`.
+ *  Handles the common single-level form; nested conditionals stay untranslated. */
+function rewriteTernary(src: string): string {
+  const m = src.match(/^(.+?)\s+if\s+(.+?)\s+else\s+(.+)$/s);
+  if (!m) return src;
+  return `((${m[2]}) ? (${m[1]}) : (${m[3]}))`;
+}
 
 /** Attempt to translate a TD Python parameter expression into our grammar.
  *  Conservative: validates by compiling and dry-running against a zero scope. */
@@ -106,19 +134,37 @@ export function translateTdExpr(py: string): TdTranslation {
   const src = py.trim();
   if (!src) return { ok: false };
   for (const bad of TD_UNSUPPORTED) if (bad.test(src)) return { ok: false };
-  let out = src;
+  let out = rewriteTernary(src);
   for (const [re, rep] of TD_REWRITES) out = out.replace(re, rep);
+  if (/\bif\b|\belse\b/.test(out)) return { ok: false }; // nested/odd conditionals
   try {
     const compiled = compileExpr(out);
-    const zero = makeChannelIndexable(() => 0);
-    const v = compiled({
-      time: { seconds: 0, frame: 0, delta: 1 / 60, fps: 60 },
-      me: { name: 'x', path: '/x' },
-      op: () => zero,
-    });
+    const v = compiled(zeroScope());
     if (typeof v !== 'number' && typeof v !== 'string' && typeof v !== 'boolean') return { ok: false };
     return { ok: true, expr: out };
   } catch {
     return { ok: false };
   }
+}
+
+/** Inert scope used to validate translations (and available to tests). */
+export function zeroScope(): ExprScope {
+  const ref = (): NodeRef => zeroNodeRef();
+  return {
+    time: { seconds: 0, frame: 0, delta: 1 / 60, fps: 60 },
+    me: zeroNodeRef(),
+    op: ref,
+    parent: ref,
+  };
+}
+
+export function zeroNodeRef(): NodeRef {
+  return new Proxy({ name: 'x', path: '/x' } as NodeRef, {
+    get: (t, prop) => {
+      if (prop === 'name' || prop === 'path') return t[prop as 'name'];
+      if (prop === 'par') return new Proxy({}, { get: () => 0 });
+      if (typeof prop === 'symbol') return undefined;
+      return 0;
+    },
+  });
 }

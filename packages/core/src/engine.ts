@@ -1,9 +1,12 @@
 import { Graph } from './graph';
 import { NodeInst } from './node';
 import { getOp, type CookCtx, type OpSpec } from './registry';
-import { compileExpr, makeChannelIndexable, type ExprScope, type CompiledExpr } from './expr';
+import {
+  compileExpr, zeroNodeRef,
+  type ExprScope, type CompiledExpr, type NodeRef, type ParIndexable,
+} from './expr';
 import type { GpuFacade } from './passes';
-import type { ChannelSet, InputState, OpOutput, ParamVal, TimeContext } from './types';
+import type { InputState, OpOutput, ParamVal, TimeContext } from './types';
 
 /**
  * Pull-based cook engine. `frame()` advances time and cooks the live roots;
@@ -70,6 +73,8 @@ export class Engine {
     return node.output;
   }
 
+  private readonly paramEvalStack = new Set<string>();
+
   /** Resolve a param to its effective value (evaluating expressions). */
   param(node: NodeInst, key: string): ParamVal {
     const spec = getOp(node.type);
@@ -78,6 +83,12 @@ export class Engine {
     const fallback = (ps?.default ?? 0) as ParamVal;
     if (!pv) return fallback;
     if (pv.mode !== 'expr' || !pv.expr) return pv.value;
+    const stackKey = `${node.id}:${key}`;
+    if (this.paramEvalStack.has(stackKey)) {
+      node.error = `param ${key}: expression cycle`;
+      return pv.value ?? fallback;
+    }
+    this.paramEvalStack.add(stackKey);
     try {
       const compiled = this.compiledFor(node, key, pv.expr);
       const out = compiled(this.scopeFor(node));
@@ -88,6 +99,8 @@ export class Engine {
     } catch (e) {
       node.error = `param ${key}: ${(e as Error).message}`;
       return pv.value ?? fallback;
+    } finally {
+      this.paramEvalStack.delete(stackKey);
     }
   }
 
@@ -111,15 +124,48 @@ export class Engine {
   private scopeFor(node: NodeInst): ExprScope {
     return {
       time: this.time,
-      me: { name: node.name, path: this.graph.pathOf(node) },
+      me: this.nodeRef(node),
       op: (path: string) => {
         const target = this.graph.resolve(path, node);
-        if (!target) return makeChannelIndexable(() => 0);
-        const out = this.cook(target);
-        if (out && out.kind === 'chop') return channelAccessor(out);
-        return makeChannelIndexable(() => 0);
+        return target ? this.nodeRef(target, true) : zeroNodeRef();
+      },
+      parent: (level = 1) => {
+        let cur: NodeInst | null = node;
+        for (let i = 0; i < Math.max(1, level) && cur; i++) cur = cur.parent;
+        return cur && cur !== this.graph.root ? this.nodeRef(cur) : zeroNodeRef();
       },
     };
+  }
+
+  /** Live node reference for expressions: `.par.key` resolves parameters,
+   *  numeric/string props index the node's cooked CHOP channels. */
+  private nodeRef(target: NodeInst, cookForChannels = false): NodeRef {
+    const self = this;
+    const par: ParIndexable = new Proxy({} as ParIndexable, {
+      get: (_t, prop) => {
+        if (typeof prop === 'symbol') return 0;
+        const v = self.param(target, prop);
+        return Array.isArray(v) ? v[0] ?? 0 : v;
+      },
+    });
+    const base = { name: target.name, path: this.graph.pathOf(target), par };
+    return new Proxy(base as unknown as NodeRef, {
+      get: (t, prop) => {
+        if (prop === 'name' || prop === 'path' || prop === 'par') {
+          return (t as unknown as Record<string, unknown>)[prop as string];
+        }
+        if (typeof prop === 'symbol') return undefined;
+        const out = cookForChannels ? self.cook(target) : target.output;
+        if (out && out.kind === 'chop') {
+          const key = Number.isNaN(Number(prop)) ? prop : Number(prop);
+          const ch = typeof key === 'number'
+            ? out.channels[key]
+            : out.channels.find((c) => c.name === key);
+          return ch && ch.data.length ? ch.data[ch.data.length - 1] : 0;
+        }
+        return 0;
+      },
+    });
   }
 
   private makeCtx(node: NodeInst, spec: OpSpec, inputs: OpOutput[]): CookCtx {
@@ -147,10 +193,3 @@ export class Engine {
   }
 }
 
-function channelAccessor(cs: ChannelSet): Record<string | number, number> {
-  return makeChannelIndexable((key) => {
-    const ch = typeof key === 'number' ? cs.channels[key] : cs.channels.find((c) => c.name === key);
-    if (!ch || ch.data.length === 0) return 0;
-    return ch.data[ch.data.length - 1];
-  });
-}

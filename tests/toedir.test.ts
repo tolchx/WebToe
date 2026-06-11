@@ -24,6 +24,11 @@ function fixture(): ImportFile[] {
     'scene1/code1.n': 'DAT:text\ntile 200 0 130 60\nend\n',
     'scene1/code1.text': "print('hello from td')\n",
     'cross1.n': 'TOP:level\ntile 900 400 130 90\ninputs\n{\n0 \tscene1/inner1\n}\nend\n',
+    'switch1.n': 'TOP:switch\ntile 1100 400 130 90\ninputs\n{\n0 \tnoise1\n1 \tlevel1\n}\nend\n',
+    'switch1.parm': '?\nindex 17 0 absTime.frame % 2\n?\n',
+    'scene1/in2.n': 'TOP:in\ntile 0 200 130 90\nend\n',
+    'data1.n': 'DAT:table\ntile 100 600 130 60\nend\n',
+    'data1.table': 'name\tvalue\nspeed\t3\n',
   };
   return Object.entries(files).map(([path, content]) => ({ path, text: async () => content }));
 }
@@ -55,8 +60,18 @@ describe('toedir importer', () => {
     expect(inner.params.get('color')?.value).toEqual([1, 0.25, 0, 1]);
     expect(g.resolve('/scene1/code1', g.root)?.text).toContain('hello from td');
 
-    expect(report.nodesTotal).toBe(8);
-    expect(report.nodesMapped).toBe(6);
+    // R1 ops + DAT-lite + tunnel index from name digits
+    const sw = g.resolve('/switch1', g.root)!;
+    expect(sw.type).toBe('top:switch');
+    expect(sw.params.get('index')?.mode).toBe('expr');
+    expect(g.resolve('/data1', g.root)?.type).toBe('dat:table');
+    expect(g.resolve('/data1', g.root)?.text).toContain('speed\t3');
+    const in2 = g.resolve('/scene1/in2', g.root)!;
+    expect(in2.type).toBe('top:in');
+    expect(in2.params.get('index')?.value).toBe(1);
+
+    expect(report.nodesTotal).toBe(11);
+    expect(report.nodesMapped).toBe(9);
     expect(report.nodesStubbed).toBe(2);
   });
 

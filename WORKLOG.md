@@ -64,7 +64,18 @@ Append-only build log. Protocol: every work chunk gets an entry — timestamp, w
 - **Engine**: fps delta floor 4 ms (250 fps ceiling) so abnormal frame drivers can't skew the estimate.
 - **README completed**: real screenshots (docs/media/, 6 shots incl. webgpu + import report with real measured numbers) captured via committed tools/capture-screens.mjs (playwright-core + system Chrome, drives `__webtoe.loop()` because headless tabs pause RAF); badges, gallery, import guide, architecture/roadmap links. Repo metadata set: description, homepage, 9 topics. Pages already on workflow builds.
 
+## 2026-06-11 — evolution cycle 1 (R1 + R2 + DAT-lite): 32.3% → 47.1% measured
+
+- **Expression engine v2**: live `.par` access on node proxies (`parent(n)`, `op('x').par.y`, `me.par.x`) with a parameter-evaluation cycle guard; Python ternary → conditional, `and/or/not`, `int()→trunc()`, `mod.math.*`, `None`; f-strings/`.menuIndex`/`panel.*` stay inert. Corpus says `.par` patterns are 38% of all 38.5k live expressions — this was the multiplier.
+- **R1 ops**: top:switch/select/math/reorder/flip (GLSL+WGSL, parity tests enforce), chop:switch/speed/par, DAT-lite (table w/ .table sidecar, select/null/in/out), COMP:null→container. Container out-children now include dat:out.
+- **Importer**: ~20 new TYPE_MAP entries + param maps; .table sidecar text attach (NUL-guarded).
+- **Measured (the self-evolution metric)**: corpus 32.3% → **47.1%** of 28,698 nodes runnable; reference production project 56 → 71 → **88** runnable. Live browser verification: switch/flip/math chain renders; `op('lfo1').par.frequency*10` evaluates 4.0; zero errors. 48/48 tests.
+- **Deep research landed** (104 agents, 23 claims verified 3-0): TD GLSL TOP injected contract fully documented → ROADMAP R4 shim table (headerless GLSL 4.60, sTD2DInputs arrays, vUV, uTD*Infos res packing, TDOutputSwizzle, pixel/compute modes). WebGPU-particle + minimal-renderer findings inform R3/R5 specs. JSON-format status: no newer-than-2025-10 statements found.
+- Engine: fps delta floor refined earlier today holds; param cycle guard added (`.par` chains can recurse).
+
 ## NEXT
+
+**Direction shift (user, 2026-06-11 PM): pause new op types — complete the experience.** In flight: TD-style OP Create dialog (family tabs + grid replacing the list palette), real-time 60fps node previews via a GPU compositor overlay (kill 6Hz readbacks), then convert a few small 2022 sketches into bundled examples that run smoothly.
 
 Backlog (v2 — full detail and measured targets in docs/ROADMAP.md):
 1. M8 compute particle family (POPs spirit) + audio-rate CHOPs (wasm decision per PLAN §5 benchmark gate).

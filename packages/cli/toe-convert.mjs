@@ -52,7 +52,9 @@ const TYPE_MAP = {
   'TOP:in': 'top:in', 'CHOP:in': 'chop:in', 'CHOP:out': 'chop:out',
   'CHOP:lfo': 'chop:lfo', 'CHOP:noise': 'chop:noise', 'CHOP:math': 'chop:math',
   'CHOP:lag': 'chop:lag', 'CHOP:constant': 'chop:constant', 'CHOP:mousein': 'chop:mousein',
-  'CHOP:merge': 'chop:merge', 'CHOP:select': 'chop:select',
+  'CHOP:merge': 'chop:merge', 'CHOP:select': 'chop:select', 'CHOP:switch': 'chop:switch', 'CHOP:speed': 'chop:speed', 'CHOP:par': 'chop:par',
+  'TOP:switch': 'top:switch', 'TOP:select': 'top:select', 'TOP:math': 'top:math', 'TOP:reorder': 'top:reorder', 'TOP:flip': 'top:flip',
+  'DAT:table': 'dat:table', 'DAT:select': 'dat:select', 'DAT:null': 'dat:null', 'DAT:in': 'dat:in', 'DAT:out': 'dat:out', 'COMP:null': 'comp:container',
   'COMP:container': 'comp:container', 'COMP:base': 'comp:container', 'DAT:text': 'dat:text',
 };
 const STUB_FOR = { TOP: 'top:stub', CHOP: 'chop:stub', DAT: 'dat:stub' };

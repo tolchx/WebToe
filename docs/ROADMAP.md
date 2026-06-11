@@ -24,14 +24,13 @@
 
 ## Phases
 
-### R1 — routing & pixel-math TOPs *(small, immediate)*
-`switch`, `select`, `math` (per-pixel add/mult/power…), `reorder` (channel swizzle), `fit`, `flip`, `crop`, `mirror`, `lookup`; CHOP: `switch`, `trail`, `speed`, `trigger`-lite. All are single-pass shaders or trivial kernels on existing contracts. *Est. corpus coverage after R1: ~40%.*
+### R1 — routing & pixel-math TOPs ✅ *(shipped in evolution cycle 1)*
+`top:switch` (expression-drivable index), `top:select` (pull any TOP by path), `top:math` (7 combine modes), `top:reorder` (channel swizzle), `top:flip`; `chop:switch`, `chop:speed` (integrator), `chop:par` (read parameters as channels); DAT-lite layer: `dat:table` (.table sidecar import), `dat:select/null/in/out`; `COMP:null → container`. Remaining (deferred, no new ops for now): `fit`, `crop`, `mirror`, `lookup`, `chop:trail`.
 
-### R2 — expression engine v2 *(the multiplier)*
-- `parent()` / `parent(n)` and `.par.Name` reads on node proxies (engine already resolves params live — expose them in the expression scope).
-- `op('x').par.y`, `me.par.x`, channel-value coercion, `absTime.frame` aliases, safe Python ternary `a if c else b` → conditional translation.
-- `CHOP:par` op (read any param as channels).
-- Keeps the hard boundary: no statements, no imports, no side effects; untranslatable stays inert (`tdExpr`).
+### R2 — expression engine v2 ✅ *(shipped in evolution cycle 1)*
+`parent(n)` and `.par.name` reads on live node proxies (with parameter-cycle guard), `op('x').par.y`, `me.par.x`, Python ternary `a if c else b` → conditional, `and/or/not`, `int()→trunc()`, `mod.math.*`, `True/False/None`. Untranslatable still inert (`tdExpr`).
+
+**Measured result of cycle 1 (R1+R2+DAT-lite + mode-bitfield decode): corpus coverage 32.3% → 47.1% of 28,698 nodes; the 213-node reference project went 56 → 88 runnable.**
 
 ### R3 — the 3D pipeline *(the headline)*
 Minimal-but-real forward renderer on the existing backend contract (no three.js — zero-dep stays):
@@ -41,8 +40,19 @@ Minimal-but-real forward renderer on the existing backend contract (no three.js 
 - `TOP:render` = scene pass into the same texture pool (depth target added to the pass contract; WebGPU render pipelines already support it naturally).
 *This phase roughly doubles real-project fidelity (~65% est.).*
 
-### R4 — `TOP:glsl`
-User fragment shaders: TD GLSL 3.30 → GLSL ES 3.00 compatibility shim (uniform/sampler renames `sTD2DInputs[i]` → `u_texN`, `uTDOutputInfo` → `u_res`, version/precision header), plus a WGSL path marked per-shader. Unsupported constructs report cleanly on the node. Unlocks custom looks in half the 2022–24 sketches.
+### R4 — `TOP:glsl` *(contract verified by adversarial web research, 3-0 votes per claim)*
+User fragment shaders, source-compatible via a shim. The injected TD contract, confirmed against [official docs](https://docs.derivative.ca/Write_a_GLSL_TOP) and the [td-shadertoy](https://github.com/matthewwachter/td-shadertoy) precedent:
+
+| TD construct | Behavior in TD | WebToe shim |
+|---|---|---|
+| `#version` | TD targets desktop GLSL 4.60 and injects the directive itself — user source is headerless (matches our corpus: 0/546 shader texts carry `#version`) | prepend `#version 300 es` + precision |
+| `sTD2DInputs[TD_NUM_2D_INPUTS]` (+`sTD3DInputs`, `sTDCubeInputs`, `sTDNoiseMap`, `sTDSineLookup`) | auto-declared sampler arrays | rewrite constant-indexed `sTD2DInputs[i]` → `u_texI` (ES 3.00 forbids dynamic sampler-array indexing — dynamic use reports unsupported); provide a noise-map helper texture |
+| `vUV` | auto-declared varying with the pixel's texcoord | alias of our `v_uv` |
+| `uTD2DInfos[i].res` / `uTDOutputInfo.res` | `(1/w, 1/h, w, h)` texture info uniforms | synthesize from our `u_res` + input handle sizes |
+| `TDOutputSwizzle(vec4)` | mandatory output wrapper normalizing platform channel layouts | identity function |
+| Mode parameter | `vertexpixel` or `compute` (dispatch size params) | pixel mode → fragment pass on both backends; compute mode → WebGPU compute path only (R5 infrastructure), reported on WebGL2 |
+
+Unlocks custom looks in 32/60 corpus projects (avg shader ≈50 lines).
 
 ### R5 — POP family on WebGPU compute
 The pass contract grows a compute variant (`ComputePassSpec`, storage buffers); POP core: `primitive`, `noise`, `math`, `merge`, `in/out`, `null`, render-as-points/lines. WebGPU-only (the reason the dual-backend architecture exists); WebGL2 shows stubs.

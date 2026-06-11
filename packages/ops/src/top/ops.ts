@@ -536,6 +536,139 @@ export const topOps: OpSpec[] = [
   },
 
   {
+    type: 'top:switch',
+    family: F,
+    label: 'switch',
+    inputs: { min: 1, max: 4 },
+    params: [{ key: 'index', type: 'int', default: 0, min: 0, max: 3 }],
+    backends: ['webgl2', 'webgpu'],
+    cook(ctx) {
+      const i = Math.max(0, Math.min(ctx.inputs.length - 1, Math.round(ctx.paramNum('index'))));
+      return asTop(ctx.inputs[i]) ?? asTop(ctx.inputs.find((x) => x && x.kind === 'top'));
+    },
+  },
+
+  {
+    type: 'top:select',
+    family: F,
+    label: 'select',
+    inputs: { min: 0, max: 0 },
+    alwaysCook: true,
+    params: [{ key: 'top', type: 'string', default: '' }],
+    backends: ['webgl2', 'webgpu'],
+    cook(ctx) {
+      const path = ctx.paramStr('top');
+      if (!path) return placeholder(ctx, [0.3, 0.3, 0.15, 1]);
+      const target = ctx.engine.graph.resolve(path, ctx.node);
+      if (!target) {
+        ctx.node.error = `select: '${path}' not found`;
+        return placeholder(ctx, [0.45, 0.2, 0.1, 1]);
+      }
+      return asTop(ctx.engine.cook(target));
+    },
+  },
+
+  {
+    type: 'top:math',
+    family: F,
+    label: 'math',
+    inputs: { min: 1, max: 4 },
+    params: [
+      {
+        key: 'combine', type: 'menu', default: 'add',
+        menu: ['add', 'subtract', 'multiply', 'average', 'max', 'min', 'power'],
+      },
+      { key: 'gain', type: 'float', default: 1, min: -4, max: 4 },
+      { key: 'offset', type: 'float', default: 0, min: -1, max: 1 },
+      ...resParams('input'),
+    ],
+    backends: ['webgl2', 'webgpu'],
+    shaders: { glsl: glsl.mathGlsl, wgsl: wgsl.mathWgsl },
+    cook(ctx) {
+      if (!requireGpu(ctx)) return null;
+      ensureShader(ctx, this);
+      const texes = ctx.inputs.map(asTop).filter((t): t is TextureOut => !!t).map((t) => t.tex);
+      if (!texes.length) return placeholder(ctx, [0.35, 0.3, 0.1, 1]);
+      const { w, h } = resolution(ctx, texes[0]);
+      const tex = ctx.gpu!.runPass(ctx.node, {
+        shaderId: this.type,
+        uniforms: {
+          u_op: ctx.menuIndex('combine'),
+          u_count: texes.length,
+          u_gain: ctx.paramNum('gain'),
+          u_offset: ctx.paramNum('offset'),
+        },
+        inputs: texes.slice(0, 4),
+        output: { width: w, height: h },
+      });
+      return { kind: 'top', tex };
+    },
+  },
+
+  {
+    type: 'top:reorder',
+    family: F,
+    label: 'reorder',
+    inputs: { min: 1, max: 1 },
+    params: [
+      { key: 'outr', type: 'menu', default: 'r', menu: ['r', 'g', 'b', 'a', 'zero', 'one'] },
+      { key: 'outg', type: 'menu', default: 'g', menu: ['r', 'g', 'b', 'a', 'zero', 'one'] },
+      { key: 'outb', type: 'menu', default: 'b', menu: ['r', 'g', 'b', 'a', 'zero', 'one'] },
+      { key: 'outa', type: 'menu', default: 'a', menu: ['r', 'g', 'b', 'a', 'zero', 'one'] },
+      ...resParams('input'),
+    ],
+    backends: ['webgl2', 'webgpu'],
+    shaders: { glsl: glsl.reorderGlsl, wgsl: wgsl.reorderWgsl },
+    cook(ctx) {
+      if (!requireGpu(ctx)) return null;
+      ensureShader(ctx, this);
+      const input = asTop(ctx.inputs[0]);
+      if (!input) return placeholder(ctx, [0.25, 0.35, 0.2, 1]);
+      const { w, h } = resolution(ctx, input.tex);
+      const tex = ctx.gpu!.runPass(ctx.node, {
+        shaderId: this.type,
+        uniforms: {
+          u_sel: [ctx.menuIndex('outr'), ctx.menuIndex('outg'), ctx.menuIndex('outb'), ctx.menuIndex('outa')],
+        },
+        inputs: [input.tex],
+        output: { width: w, height: h },
+      });
+      return { kind: 'top', tex };
+    },
+  },
+
+  {
+    type: 'top:flip',
+    family: F,
+    label: 'flip',
+    inputs: { min: 1, max: 1 },
+    params: [
+      { key: 'flipx', type: 'toggle', default: false },
+      { key: 'flipy', type: 'toggle', default: false },
+      ...resParams('input'),
+    ],
+    backends: ['webgl2', 'webgpu'],
+    shaders: { glsl: glsl.flipGlsl, wgsl: wgsl.flipWgsl },
+    cook(ctx) {
+      if (!requireGpu(ctx)) return null;
+      ensureShader(ctx, this);
+      const input = asTop(ctx.inputs[0]);
+      if (!input) return placeholder(ctx, [0.2, 0.25, 0.35, 1]);
+      const { w, h } = resolution(ctx, input.tex);
+      const tex = ctx.gpu!.runPass(ctx.node, {
+        shaderId: this.type,
+        uniforms: {
+          u_flipx: ctx.paramBool('flipx') ? 1 : 0,
+          u_flipy: ctx.paramBool('flipy') ? 1 : 0,
+        },
+        inputs: [input.tex],
+        output: { width: w, height: h },
+      });
+      return { kind: 'top', tex };
+    },
+  },
+
+  {
     type: 'top:imagein',
     family: F,
     label: 'image in',

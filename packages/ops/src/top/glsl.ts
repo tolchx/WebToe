@@ -279,6 +279,64 @@ void main() {
 }
 `;
 
+export const mathGlsl = `${PRE}
+uniform sampler2D u_tex0;
+uniform sampler2D u_tex1;
+uniform sampler2D u_tex2;
+uniform sampler2D u_tex3;
+uniform float u_op;
+uniform float u_count;
+uniform float u_gain;
+uniform float u_offset;
+vec3 combine(vec3 a, vec3 b) {
+  if (u_op < 0.5)      return a + b;
+  else if (u_op < 1.5) return a - b;
+  else if (u_op < 2.5) return a * b;
+  else if (u_op < 3.5) return a + b;          // average (divided after)
+  else if (u_op < 4.5) return max(a, b);
+  else if (u_op < 5.5) return min(a, b);
+  else                 return pow(max(a, vec3(0.0)), b);
+}
+void main() {
+  vec4 c0 = texture(u_tex0, v_uv);
+  vec3 c = c0.rgb;
+  if (u_count > 1.5) c = combine(c, texture(u_tex1, v_uv).rgb);
+  if (u_count > 2.5) c = combine(c, texture(u_tex2, v_uv).rgb);
+  if (u_count > 3.5) c = combine(c, texture(u_tex3, v_uv).rgb);
+  if (u_op > 2.5 && u_op < 3.5) c /= max(u_count, 1.0);
+  fragColor = vec4(c * u_gain + u_offset, c0.a);
+}
+`;
+
+export const reorderGlsl = `${PRE}
+uniform sampler2D u_tex0;
+uniform vec4 u_sel;
+float pick(vec4 c, float k) {
+  if (k < 0.5) return c.r;
+  else if (k < 1.5) return c.g;
+  else if (k < 2.5) return c.b;
+  else if (k < 3.5) return c.a;
+  else if (k < 4.5) return 0.0;
+  return 1.0;
+}
+void main() {
+  vec4 c = texture(u_tex0, v_uv);
+  fragColor = vec4(pick(c, u_sel.x), pick(c, u_sel.y), pick(c, u_sel.z), pick(c, u_sel.w));
+}
+`;
+
+export const flipGlsl = `${PRE}
+uniform sampler2D u_tex0;
+uniform float u_flipx;
+uniform float u_flipy;
+void main() {
+  vec2 uv = v_uv;
+  if (u_flipx > 0.5) uv.x = 1.0 - uv.x;
+  if (u_flipy > 0.5) uv.y = 1.0 - uv.y;
+  fragColor = texture(u_tex0, uv);
+}
+`;
+
 export const placeholderGlsl = `${PRE}
 uniform vec4 u_tint;
 void main() {
