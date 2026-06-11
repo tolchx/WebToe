@@ -18,11 +18,15 @@ WebToe is an original engine and editor, built from scratch for the web. It is n
 
 | Family | Operators |
 |---|---|
-| TOP | constant, noise, ramp, rectangle, transform, level, monochrome, hsv adjust, blur, composite, displace, edge, feedback, null, out, image in, video in, camera in |
-| CHOP | constant, lfo, noise, math, lag, merge, select, mouse in |
-| COMP / DAT | container (enter with double-click), text |
+| TOP | constant, noise, ramp, rectangle, transform, level, monochrome, hsv adjust, blur, composite, displace, edge, feedback, null, in, out, image in, video in, camera in |
+| CHOP | constant, lfo, noise, math, lag, merge, select, mouse in, in, out |
+| COMP / DAT | container (enter with double-click; in/out tunneling across its boundary), text |
 
-Plus per-family stub operators used by the importer.
+Plus per-family stub operators used by the importer. **Both GPU backends are at parity**: WebGL2 (default) and WebGPU (`?backend=webgpu`).
+
+## Tested .toe reading
+
+The importer is covered by an automated two-layer suite against an original, committed fixture (a real binary `.toe` plus its canonical `toeexpand` expansion — provenance in [tests/fixtures/README.md](tests/fixtures/README.md)): a CI-safe layer asserts the full reconstructed graph (types, wires incl. COMP tunnels, parameters, translated expressions, honest stubs), and an integration layer — auto-skipped where TouchDesigner isn't installed — expands the binary with the real `toeexpand` and runs the CLI end-to-end.
 
 ## Quick start
 
@@ -55,7 +59,7 @@ Details: [docs/ARCHITECTURE.md](docs/ARCHITECTURE.md) · plan & milestones: [PLA
 
 ## Roadmap
 
-WebGPU parity for the full TOP set (M7) · compute-based particle family in the spirit of POPs + audio-rate CHOPs with a benchmark-gated WASM path (M8) · cross-network wire resolution and In/Out tunneling · official-JSON importer when Derivative ships the new text format.
+Compute-based particle family in the spirit of POPs + audio-rate CHOPs with a benchmark-gated WASM path (M8) · cross-network wire resolution · media relink-by-drop for imported projects · undo/redo and marquee selection · official-JSON importer when Derivative ships the new text format.
 
 ## Disclaimer
 

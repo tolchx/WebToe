@@ -32,13 +32,23 @@ apps/web ──▶ @webtoe/editor ──▶ @webtoe/ops ──┐
 
 | | WebGL2 (`gpu/webgl2`) | WebGPU (`gpu/webgpu`) |
 |---|---|---|
-| Status | complete for all 18 TOPs | pilot ops (constant, ramp, level); parity = M7 |
+| Status | complete (all TOPs) | **parity (M7 done)** — every shader-driven TOP ships WGSL |
 | Pass | fullscreen triangle, per-shader program cache, uniform location cache | shared explicit bind-group layout; globals UBO @0, op uniforms @1 (256-aligned), sampler @2, textures @3+ |
 | Uniform rule | direct `uniform float/vecN` by name | sorted-by-name, one `vec4f` per uniform (scalar→x, vec2→xy) — linted by test |
-| Thumbnails | sync `readPixels` | deferred (async readback) — M7 |
-| Known gap | — | blit has no aspect-fit letterbox yet |
+| Thumbnails | sync `readPixels` | async `copyTextureToBuffer` readback cache (one frame latent) |
+| Blit | letterboxed (viewport) | letterboxed (`setViewport`) |
 
-Backend negotiation: WebGL2 default; `?backend=webgpu` opts in; graceful fallback on init failure. When WGSL coverage reaches parity, preference flips for capable projects.
+Backend negotiation: WebGL2 default; `?backend=webgpu` opts in; graceful fallback on init failure. Verified on webgpu in-browser: full example set renders, feedback trails accumulate, thumbnails paint. Compute pipelines remain reserved for the v2 particle family.
+
+## COMP tunneling
+
+`top:in`/`chop:in` (with an `index` param) pull the parent COMP's wired external input at cook time; `top:out`/`chop:out` mark the COMP's output (container cook prefers the out-child, falling back to the display child). `graph.connect` permits COMP-boundary wires and sizes container capacity from its in-children. The importer maps TD's `TOP:in`/`TOP:out`/`CHOP:in`/`CHOP:out` and derives `index` from TD's name digits (`in2` → index 1).
+
+## Automated .toe-reading verification
+
+Two layers (see `tests/fixtures/README.md` for fixture provenance — 100% original content round-tripped through the official tools):
+1. **`tests/toe-pipeline.test.ts`** — always-on (CI): committed canonical `toeexpand` expansion → importer → detailed graph assertions (types, COMP-boundary + tunnel wires, parm modes 0/16/17, expression translation, stub honesty, report numbers) and engine-evaluates an imported expression.
+2. **`tests/toe-binary-local.test.ts`** — auto-skips without a local TouchDesigner: expands the committed **binary** `.toe` with the real `toeexpand`, asserts the fresh expansion imports identically to the committed one, and runs the `toe-convert` CLI end-to-end.
 
 ## Editor
 

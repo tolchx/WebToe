@@ -50,11 +50,17 @@ Append-only build log. Protocol: every work chunk gets an entry — timestamp, w
 
 **v1 (M0–M6) COMPLETE.**
 
+## 2026-06-11 — v1.1: automated .toe tests, tunneling, M7 WebGPU parity
+
+- **Automated ".toe reading works" suite** (the goal's core ask): original fixture network authored as expanded text, round-tripped through the real `toecollapse`/`toeexpand` (2025.32460) and committed as both binary `.toe` and canonical expansion (provenance in tests/fixtures/README.md). Layer 1 (CI, always-on): importer → graph assertions covering types, COMP-boundary + tunnel wires, parm modes 0/16/17, expression translation (`math.sin(absTime.seconds)*0.5+1` → engine-evaluated), stub honesty (`TOP:mirror` → `top:stub`), report numbers. Layer 2 (auto-skips without TD): real `toeexpand` on the committed binary → identical import to the committed expansion; `toe-convert` CLI end-to-end. Both layers ran locally (binary layer ~300 ms/test).
+- **COMP in/out tunneling**: top:in/chop:in (index param, TD name-digit import), chop:out, container-output-via-out-child, COMP-boundary wiring + capacity from in-children, editor stubs. Real-project effect: CLI import improved 56 → 71 runnable nodes (TOP:in×7, TOP:comp×6, CHOP in/out now live).
+- **M7 WebGPU parity**: WGSL for all shader-driven TOPs (noise/rectangle/transform/monochrome/hsv/blur/composite/displace/edge + placeholder/feedback-seed), letterboxed blit via setViewport, async copyTextureToBuffer thumbnail cache. Browser-verified on `?backend=webgpu`: lfo garden renders, thumbnails paint, feedback trails accumulate (lit-pixel check 69.6% vs ~1% single-rect), zero node errors; WebGL2 regression-checked clean.
+- 42 tests green; @types/node added for the node-API test layers.
+
 ## NEXT
 
-Post-v1 backlog, in suggested order:
-1. M7 WebGPU parity: WGSL for remaining TOPs, blit aspect-fit letterbox, async-readback thumbnails, then flip backend preference for capable projects.
-2. M8 compute particle family (POPs spirit) + audio-rate CHOPs (wasm decision per PLAN §5 benchmark gate).
-3. Importer round 2: cross-network wire resolution, In/Out tunneling ops, raw-.toe drop explainer modal, more TYPE_MAP/PARAM_MAP entries driven by real import-report histograms, media relink-by-drop flow.
-4. Editor round 2: marquee select, undo/redo, node rename UI, COMP display-child preview thumbs, mobile/touch pan-zoom.
-5. Watch derivative.ca for the official JSON text format → add the second ProjectLoader (PLAN §3 adapter).
+Backlog (v2):
+1. M8 compute particle family (POPs spirit) + audio-rate CHOPs (wasm decision per PLAN §5 benchmark gate).
+2. Importer round 3: cross-network wire resolution, raw-.toe drop explainer modal, more TYPE_MAP/PARAM_MAP entries driven by real import-report histograms, media relink-by-drop flow.
+3. Editor round 2: marquee select, undo/redo, node rename UI, COMP display-child preview thumbs, mobile/touch pan-zoom.
+4. Watch derivative.ca for the official JSON text format → add the second ProjectLoader (PLAN §3 adapter).
