@@ -188,7 +188,9 @@ export class NetworkView {
       stub.className = 'wt-stub wt-in';
       stub.dataset.idx = String(i);
       stub.style.top = `${14 + i * 16}px`;
-      stub.title = `input ${i}`;
+      const desc = spec.isContainer ? 'routed to the matching in-tunnel child' : spec.inputLabels?.[i];
+      stub.title = `input ${i} · ${spec.family}${desc ? ` — ${desc}` : ''}`
+        + (i >= spec.inputs.min || spec.isContainer ? '' : ' (required)');
       stub.addEventListener('pointerdown', (e) => {
         e.stopPropagation();
         if (n.inputs[i]) {
@@ -204,7 +206,11 @@ export class NetworkView {
     if (spec.family !== 'COMP' || true) {
       const out = document.createElement('div');
       out.className = 'wt-stub wt-out';
-      out.title = 'output — drag to an input';
+      const outDesc = spec.family === 'TOP' ? 'texture'
+        : spec.family === 'CHOP' ? 'channels'
+        : spec.family === 'DAT' ? 'text'
+        : 'out-tunnel child output';
+      out.title = `output 0 · ${spec.family} (${outDesc}) — drag onto an input`;
       out.addEventListener('pointerdown', (e) => {
         e.stopPropagation();
         this.startWireDrag(n, e);

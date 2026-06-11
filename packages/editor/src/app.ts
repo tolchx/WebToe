@@ -15,6 +15,8 @@ export interface EditorOptions {
   backend?: 'webgl2' | 'webgpu';
   /** build a small default patch when starting empty (default true) */
   starterPatch?: boolean;
+  /** repository link for the toolbar icon */
+  repoUrl?: string;
 }
 
 export class EditorApp {
@@ -28,6 +30,7 @@ export class EditorApp {
   private rootEl!: HTMLDivElement;
   private netEl!: HTMLDivElement;
   private compositor!: HTMLCanvasElement;
+  private importLabel!: HTMLLabelElement;
 
   constructor(private readonly host: HTMLElement, private readonly opts: EditorOptions = {}) {}
 
@@ -52,7 +55,11 @@ export class EditorApp {
 
     const newBtn = button('new', () => this.newProject());
     const saveBtn = button('save', () => saveProjectFile(this.engine.graph, this.projName.value));
-    const loadLabel = fileButton('load', '.json,.webtoe.json', async (file) => {
+    const loadLabel = fileButton('load', '.json,.webtoe.json,.toe,.tox', async (file) => {
+      if (/\.(toe|tox)$/i.test(file.name)) {
+        this.showToeGuide(file.name);
+        return;
+      }
       try {
         this.adoptGraph(await loadProjectFile(file), file.name.replace(/\.webtoe\.json$|\.json$/, ''));
       } catch (e) {
@@ -63,17 +70,12 @@ export class EditorApp {
     const importLabel = fileButton('import .toe.dir', '', async (files) => {
       try {
         const imports = importFilesFromFileList(files);
-        if (!toedirLoader.canLoad(imports)) {
-          this.toast('that does not look like a toeexpand .toe.dir folder');
-          return;
-        }
-        const { json, report } = await toedirLoader.load(imports);
-        this.adoptGraph(graphFromJSON(json), files[0]?.webkitRelativePath?.split('/')[0] ?? 'imported');
-        this.showReport(report);
+        await this.importExpansion(imports, files[0]?.webkitRelativePath?.split('/')[0] ?? 'imported');
       } catch (e) {
         this.toast(`import failed: ${(e as Error).message}`);
       }
     }, true);
+    this.importLabel = importLabel;
 
     const examples = document.createElement('select');
     examples.innerHTML = '<option value="">examples…</option>'
@@ -93,7 +95,14 @@ export class EditorApp {
     spacer.className = 'wt-spacer';
     this.hud = document.createElement('span');
     this.hud.className = 'wt-hud';
-    bar.append(title, this.projName, newBtn, saveBtn, loadLabel, importLabel, examples, spacer, this.hud);
+    const repo = document.createElement('a');
+    repo.className = 'wt-repo';
+    repo.href = this.opts.repoUrl ?? 'https://github.com/frank890417/WebToe';
+    repo.target = '_blank';
+    repo.rel = 'noopener';
+    repo.title = 'WebToe on GitHub';
+    repo.innerHTML = '<svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.55 7.55 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>';
+    bar.append(title, this.projName, newBtn, saveBtn, loadLabel, importLabel, examples, spacer, this.hud, repo);
 
     // ---- panels
     const net = document.createElement('div');
@@ -145,6 +154,7 @@ export class EditorApp {
     new ResizeObserver(() => this.viewer.fit()).observe(viewerEl);
     this.viewer.fit();
     fitCompositor();
+    this.bindDropIntake(root);
     this.loop();
   }
 
@@ -204,6 +214,85 @@ export class EditorApp {
     };
     walk(this.engine.graph.root);
     if (this.viewer.target) this.engine.liveRoots.add(this.viewer.target);
+  }
+
+  private async importExpansion(files: { path: string; text(): Promise<string> }[], name: string): Promise<void> {
+    if (!toedirLoader.canLoad(files)) {
+      this.toast('that does not look like a toeexpand .toe.dir folder');
+      return;
+    }
+    const { json, report } = await toedirLoader.load(files);
+    this.adoptGraph(graphFromJSON(json), name);
+    this.showReport(report);
+  }
+
+  /** Drop targets: .webtoe.json loads, a .toe.dir folder imports, a raw .toe
+   *  opens the conversion guide (its binary container is proprietary). */
+  private bindDropIntake(root: HTMLElement): void {
+    root.addEventListener('dragover', (e) => e.preventDefault());
+    root.addEventListener('drop', async (e) => {
+      e.preventDefault();
+      const items = [...(e.dataTransfer?.items ?? [])];
+      const entries = items
+        .map((i) => (i as DataTransferItem & { webkitGetAsEntry?: () => FileSystemEntry | null }).webkitGetAsEntry?.())
+        .filter((x): x is FileSystemEntry => !!x);
+      const dir = entries.find((en) => en.isDirectory);
+      try {
+        if (dir) {
+          const files = await readEntryTree(dir as FileSystemDirectoryEntry);
+          await this.importExpansion(files, dir.name.replace(/\.toe\.dir$/, ''));
+          return;
+        }
+        const file = e.dataTransfer?.files?.[0];
+        if (!file) return;
+        if (/\.(toe|tox)$/i.test(file.name)) this.showToeGuide(file.name);
+        else if (/\.json$/i.test(file.name)) {
+          this.adoptGraph(await loadProjectFile(file), file.name.replace(/\.webtoe\.json$|\.json$/, ''));
+        } else this.toast(`unsupported drop: ${file.name}`);
+      } catch (err) {
+        this.toast(`drop failed: ${(err as Error).message}`);
+      }
+    });
+  }
+
+  /** Honest raw-.toe story: the binary is a proprietary compressed container
+   *  (verified — see docs/RESEARCH.md), so the one-time expansion runs with the
+   *  user's own TouchDesigner install; the expanded folder drops right in. */
+  private showToeGuide(fileName: string): void {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.55);z-index:70;display:grid;place-items:center;';
+    const macCmd = `"/Applications/TouchDesigner.app/Contents/MacOS/toeexpand" "${fileName}"`;
+    const winCmd = `"C:\\Program Files\\Derivative\\TouchDesigner\\bin\\toeexpand.exe" "${fileName}"`;
+    const box = document.createElement('div');
+    box.style.cssText = 'background:#202027;border:1px solid #3a3a44;border-radius:10px;padding:18px 22px;max-width:600px;color:#d6d6dc;font-size:13px;line-height:1.65;';
+    box.innerHTML = `
+      <div style="font-weight:700;color:#fff;margin-bottom:8px;">read ${escapeHtml(fileName)}</div>
+      <div><code>.toe</code> is a proprietary compressed binary, so browsers can't open it directly.
+      Your own TouchDesigner install converts it to text in one step — then drop the resulting
+      <b>${escapeHtml(fileName)}.dir</b> folder anywhere on this page (or pick it below).</div>
+      <div style="margin:10px 0 4px;color:#9a9aa3;">macOS</div>
+      <pre data-cmd style="background:#101013;padding:8px 10px;border-radius:6px;overflow:auto;cursor:pointer;" title="click to copy">${escapeHtml(macCmd)}</pre>
+      <div style="margin:6px 0 4px;color:#9a9aa3;">Windows</div>
+      <pre data-cmd style="background:#101013;padding:8px 10px;border-radius:6px;overflow:auto;cursor:pointer;" title="click to copy">${escapeHtml(winCmd)}</pre>
+      <div style="color:#9a9aa3;">or, with this repo checked out: <code>node packages/cli/toe-convert.mjs ${escapeHtml(fileName)}</code></div>
+      <div style="margin-top:14px;display:flex;gap:8px;justify-content:flex-end;">
+        <button data-pick style="background:#7c6cff22;color:#cfc8ff;border:1px solid #7c6cff;border-radius:5px;padding:5px 14px;cursor:pointer;">pick the expanded folder…</button>
+        <button data-close style="background:#2a2a31;color:#cfcfd6;border:1px solid #3a3a44;border-radius:5px;padding:5px 14px;cursor:pointer;">close</button>
+      </div>`;
+    box.querySelectorAll('pre[data-cmd]').forEach((pre) => {
+      pre.addEventListener('click', () => {
+        void navigator.clipboard?.writeText(pre.textContent ?? '');
+        this.toast('command copied');
+      });
+    });
+    box.querySelector('[data-close]')!.addEventListener('click', () => overlay.remove());
+    box.querySelector('[data-pick]')!.addEventListener('click', () => {
+      overlay.remove();
+      this.importLabel.querySelector('input')?.click();
+    });
+    overlay.addEventListener('pointerdown', (e) => { if (e.target === overlay) overlay.remove(); });
+    overlay.appendChild(box);
+    this.host.querySelector('.wt-root')!.appendChild(overlay);
   }
 
   private showReport(r: ImportReport): void {
@@ -277,6 +366,34 @@ function button(label: string, onClick: () => void): HTMLButtonElement {
   b.textContent = label;
   b.addEventListener('click', onClick);
   return b;
+}
+
+/** Recursively read a dropped directory entry into importer files (paths
+ *  relative to the dropped root). */
+async function readEntryTree(root: FileSystemDirectoryEntry): Promise<{ path: string; text(): Promise<string> }[]> {
+  const out: { path: string; text(): Promise<string> }[] = [];
+  const walk = async (entry: FileSystemEntry, prefix: string): Promise<void> => {
+    if (entry.isFile) {
+      const file = await new Promise<File>((res, rej) => (entry as FileSystemFileEntry).file(res, rej));
+      out.push({ path: prefix + entry.name, text: () => file.text() });
+    } else if (entry.isDirectory) {
+      const reader = (entry as FileSystemDirectoryEntry).createReader();
+      // readEntries returns batches; loop until empty
+      for (;;) {
+        const batch = await new Promise<FileSystemEntry[]>((res, rej) => reader.readEntries(res, rej));
+        if (!batch.length) break;
+        for (const child of batch) {
+          await walk(child, entry === root ? '' : `${prefix}${entry.name}/`);
+        }
+      }
+    }
+  };
+  await walk(root, '');
+  return out;
+}
+
+function escapeHtml(s: string): string {
+  return s.replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;').replace(/"/g, '&quot;');
 }
 
 function fileButton(label: string, accept: string, onFile: (f: File) => void): HTMLLabelElement;

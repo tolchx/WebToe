@@ -13,9 +13,9 @@ function asTop(o: OpOutput | undefined): TextureOut | null {
 
 function resParams(defaultMode: 'input' | 'custom'): ParamSpec[] {
   return [
-    { key: 'resmode', type: 'menu', default: defaultMode, menu: ['input', 'custom'] },
-    { key: 'resw', type: 'int', default: DEFAULT_RES[0], min: 1, max: 4096 },
-    { key: 'resh', type: 'int', default: DEFAULT_RES[1], min: 1, max: 4096 },
+    { key: 'resmode', label: 'resolution', type: 'menu', default: defaultMode, menu: ['input', 'custom'], page: 'common' },
+    { key: 'resw', label: 'width', type: 'int', default: DEFAULT_RES[0], min: 1, max: 4096, page: 'common' },
+    { key: 'resh', label: 'height', type: 'int', default: DEFAULT_RES[1], min: 1, max: 4096, page: 'common' },
   ];
 }
 
@@ -376,6 +376,7 @@ export const topOps: OpSpec[] = [
     family: F,
     label: 'composite',
     inputs: { min: 1, max: 4 },
+    inputLabels: ['top layer (input 0 composites over the rest)', 'layer 2', 'layer 3', 'base layer'],
     params: [
       {
         key: 'operation', type: 'menu', default: 'over',
@@ -406,6 +407,7 @@ export const topOps: OpSpec[] = [
     family: F,
     label: 'displace',
     inputs: { min: 2, max: 2 },
+    inputLabels: ['source image', 'displacement map (rg channels shift uv)'],
     params: [
       { key: 'weight', type: 'float', default: 0.1, min: -1, max: 1 },
       { key: 'offsetx', type: 'float', default: 0, min: -1, max: 1 },
@@ -573,6 +575,7 @@ export const topOps: OpSpec[] = [
     family: F,
     label: 'math',
     inputs: { min: 1, max: 4 },
+    inputLabels: ['operand 1', 'operand 2', 'operand 3', 'operand 4'],
     params: [
       {
         key: 'combine', type: 'menu', default: 'add',

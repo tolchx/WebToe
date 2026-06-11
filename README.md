@@ -34,11 +34,13 @@ WebToe is an original engine and editor built from scratch for the web. It is no
 
 Every TouchDesigner install ships `toeexpand`, the official CLI that converts a binary `.toe` into readable text. WebToe consumes that expansion — your project files never leave your machine, and WebToe bundles nothing of Derivative's.
 
+**Drop files anywhere on the page**: a `.webtoe.json` loads, a `.toe.dir` folder imports, and a raw `.toe` opens a guide with the exact copy-paste `toeexpand` command for your file (the binary container is proprietary, so the one-time expansion runs with your own TD install) plus a folder picker for the result.
+
 ```bash
 # option A — one-step CLI (finds toeexpand in your local TD install):
 node packages/cli/toe-convert.mjs myproject.toe        # → myproject.webtoe.json
 
-# option B — expand manually, then use the "import .toe.dir" toolbar button:
+# option B — expand manually, then drop the .toe.dir folder onto the page:
 "/Applications/TouchDesigner.app/Contents/MacOS/toeexpand" myproject.toe
 ```
 

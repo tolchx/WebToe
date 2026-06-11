@@ -14,6 +14,8 @@ export interface ParamSpec {
   max?: number;
   step?: number;
   menu?: string[];
+  /** parameter page (panel renders a section header per page) */
+  page?: string;
 }
 
 export type ParamMode = 'const' | 'expr' | 'disabled-expr';

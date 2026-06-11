@@ -34,7 +34,19 @@ export class ParamPanel {
     this.el.appendChild(head);
     this.headErr = err;
 
-    for (const ps of spec.params) this.el.appendChild(this.row(node, ps));
+    let page: string | undefined;
+    for (const ps of spec.params) {
+      if (ps.page !== page) {
+        page = ps.page;
+        if (page) {
+          const h = document.createElement('div');
+          h.className = 'wt-ppage';
+          h.textContent = page;
+          this.el.appendChild(h);
+        }
+      }
+      this.el.appendChild(this.row(node, ps));
+    }
 
     if (node.text !== undefined) {
       const pre = document.createElement('pre');

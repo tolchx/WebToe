@@ -80,6 +80,14 @@ Append-only build log. Protocol: every work chunk gets an entry — timestamp, w
 - **Three real 2022 sketches imported as bundled examples** (06 pseudo-voronoi, 07 fractals, 08 chop study): converted via the full importer from the original .toe files, TD scaffolding (local/perform) stripped, lightly adapted (dead movie source → noise; circle TOP stub → soft rectangle; `click` channel idiom → `lmb` with idle offsets). All three verified rendering + interacting, zero node errors.
 - **Two engine fixes found by the real sketches** (the point of dogfooding): (1) composite/over layer order now TD-compatible — input 0 is the TOP layer (the imported patch's opaque background had covered everything; bundled trails example rewired accordingly); (2) importer unquotes quoted string constants (`channames 0 "tx ty"` had kept literal quotes, breaking select patterns) — regression tests added for both. 49 tests.
 
+## 2026-06-11 — polish round: .toe intake, tooltips, full math CHOP, GitHub link
+
+- **Drop-anywhere .toe intake**: drag a `.webtoe.json` (loads), a `.toe.dir` folder (recursive FileSystemEntry walk → importer), or a raw `.toe`/`.tox` (guide modal: proprietary-binary explanation, copyable per-OS toeexpand commands pre-filled with the filename, CLI alternative, "pick the expanded folder…" button). The load button also accepts `.toe` and routes to the guide. Re-verified: no zlib streams anywhere in .toe binaries (full-file scan) — in-browser binary parsing remains impossible, the guide is the honest path.
+- **Inlet/outlet tooltips**: hover shows `input N · FAMILY — description (required)` / `output 0 · FAMILY (texture/channels/text)`; per-input descriptions via new `OpSpec.inputLabels` (displace, composite, math ops); containers explain tunnel routing.
+- **Math CHOP completed** to the TD pipeline: channel pre op → combine channels → combine CHOPs → channel post op → mult-add → range remap, organized in parameter pages (op / mult-add / range) via new `ParamSpec.page`; the panel renders page section headers; TOP common page groups resolution params. Importer maps preop/chanop/postop/fromrange/torange tokens. Pipeline unit test (49 total).
+- **GitHub link** (octocat icon) in the toolbar → repo (configurable via `EditorOptions.repoUrl`).
+- Browser-verified: modal renders + copies, drop-load of a synthetic project works, param pages render, tooltips correct, zero errors.
+
 ## NEXT
 
 Backlog (v2 — full detail and measured targets in docs/ROADMAP.md):

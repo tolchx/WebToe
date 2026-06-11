@@ -79,39 +79,82 @@ export const chopOps: OpSpec[] = [
     family: F,
     label: 'math',
     inputs: { min: 1, max: 4 },
+    inputLabels: ['chop 1', 'chop 2', 'chop 3', 'chop 4'],
     params: [
-      { key: 'combine', type: 'menu', default: 'add', menu: ['add', 'subtract', 'multiply', 'divide', 'average'] },
-      { key: 'preadd', type: 'float', default: 0, min: -10, max: 10 },
-      { key: 'gain', type: 'float', default: 1, min: -10, max: 10 },
-      { key: 'postadd', type: 'float', default: 0, min: -10, max: 10 },
+      { key: 'preop', label: 'channel pre op', type: 'menu', default: 'off', page: 'op',
+        menu: ['off', 'negate', 'positive', 'square', 'sqrt'] },
+      { key: 'chanop', label: 'combine channels', type: 'menu', default: 'off', page: 'op',
+        menu: ['off', 'add', 'subtract', 'multiply', 'divide', 'average', 'minimum', 'maximum'] },
+      { key: 'combine', label: 'combine chops', type: 'menu', default: 'add', page: 'op',
+        menu: ['add', 'subtract', 'multiply', 'divide', 'average', 'minimum', 'maximum'] },
+      { key: 'postop', label: 'channel post op', type: 'menu', default: 'off', page: 'op',
+        menu: ['off', 'negate', 'positive', 'square', 'sqrt'] },
+      { key: 'preadd', label: 'pre-add', type: 'float', default: 0, min: -10, max: 10, page: 'mult-add' },
+      { key: 'gain', label: 'multiply', type: 'float', default: 1, min: -10, max: 10, page: 'mult-add' },
+      { key: 'postadd', label: 'post-add', type: 'float', default: 0, min: -10, max: 10, page: 'mult-add' },
+      { key: 'fromrange1', label: 'from range low', type: 'float', default: 0, min: -10, max: 10, page: 'range' },
+      { key: 'fromrange2', label: 'from range high', type: 'float', default: 1, min: -10, max: 10, page: 'range' },
+      { key: 'torange1', label: 'to range low', type: 'float', default: 0, min: -10, max: 10, page: 'range' },
+      { key: 'torange2', label: 'to range high', type: 'float', default: 1, min: -10, max: 10, page: 'range' },
     ],
     cook(ctx) {
       const ins = ctx.inputs.map(asChop).filter((c): c is ChannelSet => !!c);
       if (!ins.length) return channels([]);
-      const nch = Math.max(...ins.map((c) => c.channels.length));
+      const unary = (op: string, v: number): number => {
+        switch (op) {
+          case 'negate': return -v;
+          case 'positive': return Math.abs(v);
+          case 'square': return v * v;
+          case 'sqrt': return Math.sqrt(Math.max(0, v));
+          default: return v;
+        }
+      };
+      const binary = (op: string, a: number, b: number): number => {
+        switch (op) {
+          case 'add': case 'average': return a + b;
+          case 'subtract': return a - b;
+          case 'multiply': return a * b;
+          case 'divide': return b === 0 ? 0 : a / b;
+          case 'minimum': return Math.min(a, b);
+          case 'maximum': return Math.max(a, b);
+          default: return a;
+        }
+      };
+      const preop = ctx.paramStr('preop');
+      const chanop = ctx.paramStr('chanop');
       const combine = ctx.paramStr('combine');
+      const postop = ctx.paramStr('postop');
+
+      // 1) channel pre op, 2) combine channels within each chop
+      const staged = ins.map((cs) => {
+        const vals = cs.channels.map((ch) => unary(preop, ch.data[ch.data.length - 1] ?? 0));
+        if (chanop !== 'off' && vals.length > 1) {
+          let v = vals[0];
+          for (let k = 1; k < vals.length; k++) v = binary(chanop, v, vals[k]);
+          if (chanop === 'average') v /= vals.length;
+          return { names: [cs.channels[0]?.name ?? 'chan1'], vals: [v] };
+        }
+        return { names: cs.channels.map((c) => c.name), vals };
+      });
+
+      // 3) combine chops channel-wise, 4) post op, 5) mult-add, 6) range remap
+      const nch = Math.max(...staged.map((s) => s.vals.length));
       const preadd = ctx.paramNum('preadd');
       const gain = ctx.paramNum('gain');
       const postadd = ctx.paramNum('postadd');
+      const f1 = ctx.paramNum('fromrange1'), f2 = ctx.paramNum('fromrange2');
+      const t1 = ctx.paramNum('torange1'), t2 = ctx.paramNum('torange2');
+      const identityRange = f1 === t1 && f2 === t2;
       const out: [string, number][] = [];
       for (let i = 0; i < nch; i++) {
-        const vals = ins
-          .map((c) => c.channels[i])
-          .filter((ch): ch is Channel => !!ch)
-          .map((ch) => ch.data[ch.data.length - 1] ?? 0);
+        const vals = staged.filter((s) => i < s.vals.length).map((s) => s.vals[i]);
         let v = vals[0] ?? 0;
-        for (let k = 1; k < vals.length; k++) {
-          switch (combine) {
-            case 'add': v += vals[k]; break;
-            case 'subtract': v -= vals[k]; break;
-            case 'multiply': v *= vals[k]; break;
-            case 'divide': v = vals[k] === 0 ? 0 : v / vals[k]; break;
-            case 'average': v += vals[k]; break;
-          }
-        }
+        for (let k = 1; k < vals.length; k++) v = binary(combine, v, vals[k]);
         if (combine === 'average' && vals.length > 0) v /= vals.length;
-        const name = ins.find((c) => c.channels[i])?.channels[i]?.name ?? `chan${i + 1}`;
-        out.push([name, (v + preadd) * gain + postadd]);
+        v = unary(postop, v);
+        v = (v + preadd) * gain + postadd;
+        if (!identityRange && f2 !== f1) v = ((v - f1) / (f2 - f1)) * (t2 - t1) + t1;
+        out.push([staged.find((s) => i < s.names.length)?.names[i] ?? `chan${i + 1}`, v]);
       }
       return channels(out);
     },

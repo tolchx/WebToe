@@ -100,6 +100,32 @@ describe('engine + CHOP cooking', () => {
     expect(sample(out, 'lmb')).toBe(1);
   });
 
+  it('math full pipeline: pre op → combine channels → combine chops → post op → mult-add → range', () => {
+    const e = new Engine();
+    const a = e.graph.create('chop:constant'); // channels: x=-3, y=4
+    a.params.get('name0')!.value = 'x';
+    a.params.get('value0')!.value = -3;
+    a.params.get('name1')!.value = 'y';
+    a.params.get('value1')!.value = 4;
+    const b = e.graph.create('chop:constant');
+    b.params.get('value0')!.value = 2;
+    const m = e.graph.create('chop:math');
+    e.graph.connect(a, m, 0);
+    e.graph.connect(b, m, 1);
+    m.params.get('preop')!.value = 'positive';   // |−3|=3, |4|=4, |2|=2
+    m.params.get('chanop')!.value = 'add';       // a → 7 ; b → 2
+    m.params.get('combine')!.value = 'multiply'; // 7 × 2 = 14
+    m.params.get('postop')!.value = 'square';    // 196
+    m.params.get('preadd')!.value = 4;           // 200
+    m.params.get('gain')!.value = 0.5;           // 100
+    m.params.get('postadd')!.value = -90;        // 10
+    m.params.get('fromrange1')!.value = 0;
+    m.params.get('fromrange2')!.value = 10;      // remap 0..10 → 0..1 ⇒ 1
+    const out = liveCook(e, m, [0]);
+    expect(out.channels.length).toBe(1);
+    expect(sample(out, 'x')).toBeCloseTo(1, 6);
+  });
+
   it('chop:switch picks the indexed input (expression-drivable)', () => {
     const e = new Engine();
     const a = e.graph.create('chop:constant');

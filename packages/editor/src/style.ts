@@ -25,6 +25,8 @@ const CSS = `
 .wt-bar button:hover, .wt-bar label.wt-filebtn:hover { background: #34343d; }
 .wt-bar .wt-spacer { flex: 1; }
 .wt-bar .wt-hud { color: #8a8a93; font-family: ui-monospace, monospace; font-size: 11px; }
+.wt-bar a.wt-repo { color: #9a9aa3; display: inline-flex; align-items: center; padding: 4px; border-radius: 5px; }
+.wt-bar a.wt-repo:hover { color: #fff; background: #2a2a31; }
 
 .wt-net { grid-area: net; position: relative; overflow: hidden; outline: none;
   background:
@@ -85,6 +87,8 @@ const CSS = `
 .wt-params .wt-phead .wt-ptype { color: #84848d; font-size: 11px; }
 .wt-params .wt-phead .wt-perr { color: #e24b4a; font-size: 11px; margin-left: auto;
   max-width: 170px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.wt-ppage { padding: 9px 12px 3px; color: #6a6a73; font-size: 10px; text-transform: uppercase;
+  letter-spacing: 1.2px; border-top: 1px solid #232329; margin-top: 5px; }
 .wt-prow { display: grid; grid-template-columns: 96px 1fr 26px; gap: 6px; align-items: center;
   padding: 4px 12px; }
 .wt-prow:hover { background: #1f1f25; }

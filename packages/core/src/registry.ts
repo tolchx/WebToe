@@ -26,6 +26,8 @@ export interface OpSpec {
   family: Family;
   label?: string;
   inputs: { min: number; max: number };
+  /** human descriptions per wired input, shown on inlet hover */
+  inputLabels?: string[];
   params: ParamSpec[];
   /** TOP only: which backends this op supports (shader sources present for each) */
   backends?: BackendName[];
