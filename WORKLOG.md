@@ -22,6 +22,13 @@ Append-only build log. Protocol: every work chunk gets an entry — timestamp, w
 - Evidence: `npm run check` green — 23/23 tests (graph structure/wiring/paths, expr eval + TD translation accept/refuse cases, engine cooking incl. expr-driven params, cycle guard, lag convergence, serialize round-trip + stub fallback + version guard).
 - Fix found by tests: cycle-guard error was wiped by post-input `error=null` reset — moved reset to cook start.
 
+## 2026-06-11 — M2 GPU backends + TOP family
+
+- `packages/gpu`: WebGL2 backend complete (program/uniform caches, per-(node,slot) ping-pong texture pools, previousFrame for feedback, media upload, letterboxed blit, readPixels thumbnails, release/dispose). WebGPU backend working skeleton: explicit shared bind-group layout (uniform UBO at 0 globals/1 ops with 256-aligned offsets, sampler+4 textures), pilot pipelines, media upload, blit; readPixels deferred to M7 (async readback), blit aspect-fit deferred to M7.
+- `packages/ops` TOP family (17 ops, original GLSL): constant, noise (3D value-noise fBm), ramp, rectangle (sdf), transform (inverse-map + extend modes), level, monochrome, hsvadjust, blur (separable multi-pass via slots), composite (4-input, 6 blend ops), displace, edge (sobel), feedback (lazyInputs + previousFrame), null/out, imagein/videoin/camerain (media upload, placeholder + error states). WGSL pilots: constant, ramp, level.
+- Core contract additions: `lazyInputs` (feedback cycle-break), runPass `slot` param, `setTime` on facade.
+- Evidence: 26/26 tests incl. backend-contract checks (shader sources per declared backend, WGSL packing-rule lint, full WebGL2 coverage). Visual: hello-noise renders animated at 60 fps on webgl2 with lfo→level.brightness expression visibly modulating; `?backend=webgpu` renders animated circular ramp via pilot WGSL at 60 fps. Zero console errors on both.
+
 ## NEXT
 
-M2 — `packages/gpu` (GpuFacade impl: WebGL2 full + WebGPU detect/skeleton with pilot ops) + `packages/ops` TOP family per PLAN §7 (GLSL originals); wire a minimal boot in apps/web that renders 01-hello-noise headful; screenshot evidence; then commit M2.
+M3 — `packages/editor`: mountEditor(el) with network view (DOM nodes over SVG wires, pan/zoom, palette via Tab/double-click, wire-drag, COMP enter/exit breadcrumb, display flag), parameter panel (typed widgets + expression toggle), viewer panel (engine canvas + CHOP scope), thumbnails via readPixels at ~6 Hz. Replace M2 boot in apps/web with the editor. Interaction smoke + screenshots; commit M3.

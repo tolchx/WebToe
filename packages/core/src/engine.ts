@@ -33,6 +33,7 @@ export class Engine {
     this.lastSeconds = now;
     const fps = this.time.fps * 0.95 + (1 / delta) * 0.05;
     this.time = { seconds: t, frame: this.time.frame + 1, delta, fps };
+    this.gpu?.setTime(t);
     for (const node of this.liveRoots) {
       if (this.graph.byId.has(node.id)) this.cook(node);
     }
@@ -53,7 +54,7 @@ export class Engine {
         const src = node.inputs[0];
         node.output = src ? this.cook(src) : null;
       } else {
-        const inputs = node.inputs.map((n) => (n ? this.cook(n) : null));
+        const inputs = spec.lazyInputs ? [] : node.inputs.map((n) => (n ? this.cook(n) : null));
         const ctx = this.makeCtx(node, spec, inputs);
         node.output = spec.cook(ctx);
       }

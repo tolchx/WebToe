@@ -35,6 +35,9 @@ export interface OpSpec {
   isContainer?: boolean;
   /** ops that must cook every frame even with static params (time/media/io-driven) */
   alwaysCook?: boolean;
+  /** engine will NOT pre-cook wired inputs (ctx.inputs stays empty) — lets
+   *  feedback-style ops read previous-frame state without recursing a cycle */
+  lazyInputs?: boolean;
   schemaVersion?: number;
   cook(ctx: CookCtx): OpOutput;
   /** optional param migration for plugin/op evolution */

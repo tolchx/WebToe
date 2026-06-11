@@ -32,10 +32,13 @@ export type BackendName = 'webgl2' | 'webgpu';
 
 export interface GpuFacade {
   readonly name: BackendName;
+  /** engine forwards time each frame so backends can inject `u_time` */
+  setTime(seconds: number): void;
   registerShader(id: string, sources: ShaderSources): void;
-  /** Run one fullscreen pass; output texture is pooled per (node, resolution). */
-  runPass(node: NodeInst, spec: TexturePassSpec): TextureHandle;
-  /** Previous-frame output of `node` (ping-pong) — feedback's escape hatch. */
+  /** Run one fullscreen pass into the node's pooled target. `slot` lets one op
+   *  own several targets (e.g. separable blur ping-pong); default 'main'. */
+  runPass(node: NodeInst, spec: TexturePassSpec, slot?: string): TextureHandle;
+  /** Previous-frame 'main' output of `node` (ping-pong) — feedback's escape hatch. */
   previousFrame(node: NodeInst): TextureHandle | null;
   /** Upload image/video/canvas pixels into node's pooled texture. */
   uploadMedia(node: NodeInst, source: TexImageSource, flipY?: boolean): TextureHandle;
