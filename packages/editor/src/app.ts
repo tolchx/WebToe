@@ -1,6 +1,8 @@
-import { Engine, graphFromJSON, type Graph, type NodeInst, VERSION } from '@webtoe/core';
+import { Engine, graphFromJSON, type Graph, type ImportReport, type NodeInst, VERSION } from '@webtoe/core';
 import { createBackend } from '@webtoe/gpu';
-import { loadProjectFile, loadProjectUrl, saveProjectFile } from '@webtoe/io';
+import {
+  importFilesFromFileList, loadProjectFile, loadProjectUrl, saveProjectFile, toedirLoader,
+} from '@webtoe/io';
 import { injectStyles } from './style';
 import { NetworkView } from './network';
 import { ParamPanel } from './params';
@@ -54,6 +56,21 @@ export class EditorApp {
       }
     });
 
+    const importLabel = fileButton('import .toe.dir', '', async (files) => {
+      try {
+        const imports = importFilesFromFileList(files);
+        if (!toedirLoader.canLoad(imports)) {
+          this.toast('that does not look like a toeexpand .toe.dir folder');
+          return;
+        }
+        const { json, report } = await toedirLoader.load(imports);
+        this.adoptGraph(graphFromJSON(json), files[0]?.webkitRelativePath?.split('/')[0] ?? 'imported');
+        this.showReport(report);
+      } catch (e) {
+        this.toast(`import failed: ${(e as Error).message}`);
+      }
+    }, true);
+
     const examples = document.createElement('select');
     examples.innerHTML = '<option value="">examples…</option>'
       + (this.opts.examples ?? []).map((e) => `<option value="${e.url}">${e.name}</option>`).join('');
@@ -72,7 +89,7 @@ export class EditorApp {
     spacer.className = 'wt-spacer';
     this.hud = document.createElement('span');
     this.hud.className = 'wt-hud';
-    bar.append(title, this.projName, newBtn, saveBtn, loadLabel, examples, spacer, this.hud);
+    bar.append(title, this.projName, newBtn, saveBtn, loadLabel, importLabel, examples, spacer, this.hud);
 
     // ---- panels
     const net = document.createElement('div');
@@ -167,6 +184,25 @@ export class EditorApp {
     if (this.viewer.target) this.engine.liveRoots.add(this.viewer.target);
   }
 
+  private showReport(r: ImportReport): void {
+    const overlay = document.createElement('div');
+    overlay.style.cssText = 'position:absolute;inset:0;background:rgba(0,0,0,0.55);z-index:70;display:grid;place-items:center;';
+    const box = document.createElement('div');
+    box.style.cssText = 'background:#202027;border:1px solid #3a3a44;border-radius:10px;padding:18px 22px;max-width:520px;color:#d6d6dc;font-size:13px;line-height:1.6;';
+    const pct = r.nodesTotal ? Math.round((r.nodesMapped / r.nodesTotal) * 100) : 0;
+    box.innerHTML = `
+      <div style="font-weight:700;color:#fff;margin-bottom:8px;">TouchDesigner import report</div>
+      <div>${r.nodesTotal} nodes — <b style="color:#4fb286">${r.nodesMapped} runnable (${pct}%)</b>,
+        ${r.nodesStubbed} kept as stubs (structure, wires and layout preserved)</div>
+      <div>${r.exprTranslated} expressions translated · ${r.exprDisabled} kept inert (shown on the ƒ field)</div>
+      ${r.notes.length ? `<div style="margin-top:8px;color:#9a9aa3;">${r.notes.map((n) => `· ${n}`).join('<br>')}</div>` : ''}
+      <div style="margin-top:14px;text-align:right;"><button style="background:#2a2a31;color:#cfcfd6;border:1px solid #3a3a44;border-radius:5px;padding:5px 14px;cursor:pointer;">ok</button></div>`;
+    box.querySelector('button')!.addEventListener('click', () => overlay.remove());
+    overlay.addEventListener('pointerdown', (e) => { if (e.target === overlay) overlay.remove(); });
+    overlay.appendChild(box);
+    this.host.querySelector('.wt-root')!.appendChild(overlay);
+  }
+
   private toast(msg: string): void {
     const t = document.createElement('div');
     t.className = 'wt-toast';
@@ -197,16 +233,27 @@ function button(label: string, onClick: () => void): HTMLButtonElement {
   return b;
 }
 
-function fileButton(label: string, accept: string, onFile: (f: File) => void): HTMLLabelElement {
+function fileButton(label: string, accept: string, onFile: (f: File) => void): HTMLLabelElement;
+function fileButton(label: string, accept: string, onFiles: (f: FileList) => void, directory: true): HTMLLabelElement;
+function fileButton(
+  label: string,
+  accept: string,
+  onPick: ((f: File) => void) | ((f: FileList) => void),
+  directory = false,
+): HTMLLabelElement {
   const l = document.createElement('label');
   l.className = 'wt-filebtn';
   l.textContent = label;
   const input = document.createElement('input');
   input.type = 'file';
-  input.accept = accept;
+  if (accept) input.accept = accept;
+  if (directory) (input as HTMLInputElement & { webkitdirectory: boolean }).webkitdirectory = true;
   input.style.display = 'none';
   input.addEventListener('change', () => {
-    if (input.files?.[0]) onFile(input.files[0]);
+    if (input.files?.length) {
+      if (directory) (onPick as (f: FileList) => void)(input.files);
+      else (onPick as (f: File) => void)(input.files[0]);
+    }
     input.value = '';
   });
   l.appendChild(input);
