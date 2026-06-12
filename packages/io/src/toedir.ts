@@ -56,6 +56,7 @@ const TYPE_MAP: Record<string, string> = {
   'TOP:math': 'top:math',
   'TOP:reorder': 'top:reorder',
   'TOP:flip': 'top:flip',
+  'TOP:glsl': 'top:glsl',
   'CHOP:in': 'chop:in',
   'CHOP:out': 'chop:out',
   'CHOP:switch': 'chop:switch',
@@ -208,6 +209,7 @@ const PARAM_MAP: Record<string, Record<string, ParamRule>> = {
   'TOP:switch': { index: { to: 'index' } },
   'TOP:select': { top: { to: 'top' } },
   'TOP:flip': { flipx: { to: 'flipx' }, flipy: { to: 'flipy' } },
+  'TOP:glsl': { glsl1: { to: 'glslpath' } },
   'CHOP:switch': { index: { to: 'index' } },
   'CHOP:par': { op: { to: 'oppath' }, pars: { to: 'parnames' } },
   'DAT:select': { dat: { to: 'dat' } },
@@ -463,6 +465,11 @@ export const toedirLoader: ProjectLoader = {
         };
         if (!mapped) nj.foreignType = raw.tdType;
         if (raw.text !== undefined) nj.text = raw.text;
+
+        // GLSL TOP: shader source lives in the .text sidecar
+        if (type === 'top:glsl' && raw.text !== undefined) {
+          params.source = { mode: 'const', value: raw.text };
+        }
 
         // params
         const params: Record<string, ParamValueJSON> = {};

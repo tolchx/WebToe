@@ -358,12 +358,40 @@ void main() {
 // ---------------------------------------------------------------------------
 
 /**
+ * Procedural noise function to replace sTDNoiseMap texture lookups.
+ * Hash-based value noise at 256×256 equivalent resolution — matches
+ * TD's pre-computed noise map closely enough for visual use.
+ */
+const TD_NOISE_FN = `
+// TD-compatible noise map (procedural — no texture upload needed)
+float tdHash(vec2 p) {
+  return fract(sin(dot(p, vec2(127.1, 311.7))) * 43758.5453123);
+}
+float tdNoise(vec2 uv) {
+  vec2 i = floor(uv);
+  vec2 f = fract(uv);
+  f = f * f * (3.0 - 2.0 * f);
+  return mix(
+    mix(tdHash(i), tdHash(i + vec2(1.0, 0.0)), f.x),
+    mix(tdHash(i + vec2(0.0, 1.0)), tdHash(i + vec2(1.0, 1.0)), f.x),
+    f.y);
+}
+`;
+
+/**
  * GLSL TOP contract shim — wraps user code with TD-compatible uniforms
- * (sTD2DInputs, vUV, uTD2DInfos, TDOutputSwizzle) for WebGL2 ES 300.
+ * (sTD2DInputs, vUV, uTD2DInfos, TDOutputSwizzle, sTDNoiseMap, sTDSineLookup,
+ * uTDOutputInfo) for WebGL2 ES 300.
  *
  * Since ES 300 does not support dynamic sampler array indexing, each
  * sTD2DInputs[i] is mapped to a named uniform (u_tex0..u_tex3). The
  * wrapGlslTop() function rewrites references at the JS level.
+ *
+ * sTDNoiseMap is provided as a procedural noise function (tdNoise)
+ * rather than a texture, avoiding upload overhead.
+ * sTDSineLookup is a sine wave function: sin(x * 2π) * 0.5 + 0.5.
+ * sTD3DInputs and sTDCubeInputs are declared as dummy samplers
+ * (unsupported in WebToe — use reports a warning).
  */
 export const glslTopContractGlsl = `#version 300 es
 precision highp float;
@@ -387,6 +415,22 @@ uniform vec4 uTD2DInfoRes1;
 uniform vec4 uTD2DInfoRes2;
 uniform vec4 uTD2DInfoRes3;
 
+// Output resolution info (TD's uTDOutputInfo.res)
+uniform vec4 u_TDOutputInfoRes;
+
+// Procedural noise replacement for sTDNoiseMap
+${TD_NOISE_FN}
+#define sTDNoiseMap(uv) vec4(vec3(tdNoise((uv) * 256.0)), 1.0)
+
+// Sine lookup replacement for sTDSineLookup
+#define sTDSineLookup(x) (sin((x) * 6.28318530718) * 0.5 + 0.5)
+
+// Stub 3D input samplers (not supported in WebToe — use reports a warning)
+uniform sampler2D sTD3DInputs0;
+uniform sampler2D sTD3DInputs1;
+uniform sampler2D sTDCubeInputs0;
+uniform sampler2D sTDCubeInputs1;
+
 // TDOutputSwizzle — identity for WebGL2 (no output swizzle needed)
 vec4 TDOutputSwizzle(vec4 c) { return c; }
 // --- End Shim ---
@@ -400,17 +444,41 @@ void main() {
 }
 `;
 
+export interface GlslTopWrapResult {
+  /** The compiled GLSL source ready for the WebGL2 backend. */
+  glsl: string;
+  /** True if the user code uses dynamic sampler array indexing (unsupported). */
+  hasDynamicIndex: boolean;
+  /** True if 3D input samplers (sTD3DInputs/sTDCubeInputs) are referenced. */
+  uses3DInputs: boolean;
+}
+
 /**
  * Wraps user-written GLSL code with the TD GLSL TOP contract shim.
  * Replaces TD-style array/hlsl references with WebGL2 ES 300 named
  * uniform equivalents (sTD2DInputs[i] → u_tex##i,
- * uTD2DInfos[i].res → uTD2DInfoRes##i).
+ * uTD2DInfos[i].res → uTD2DInfoRes##i, uTDOutputInfo.res → u_TDOutputInfoRes).
+ *
+ * Returns metadata about unsupported features the user code uses.
  */
-export function wrapGlslTop(userCode: string): string {
+export function wrapGlslTop(userCode: string): GlslTopWrapResult {
   let code = userCode.trim();
-  if (!code) return glslTopDefaultGlsl;
+  if (!code) return { glsl: glslTopDefaultGlsl, hasDynamicIndex: false, uses3DInputs: false };
+
+  let hasDynamicIndex = false;
+  let uses3DInputs = false;
+
+  // Detect dynamic sampler array indexing (variable index, not a literal 0-3)
+  const dynMatches = code.matchAll(/sTD2DInputs\s*\[\s*(\S+?)\s*\]/g);
+  hasDynamicIndex = [...dynMatches].some((m) => !['0', '1', '2', '3'].includes(m[1]));
+
+  // Detect 3D/cube input references
+  if (/sTD3DInputs|sTDCubeInputs/.test(code)) {
+    uses3DInputs = true;
+  }
 
   // Replace sTD2DInputs[i] with named samplers (ES 300 constraint)
+  // Only match literal indices 0-3
   code = code.replace(/sTD2DInputs\s*\[\s*0\s*\]/g, 'u_tex0');
   code = code.replace(/sTD2DInputs\s*\[\s*1\s*\]/g, 'u_tex1');
   code = code.replace(/sTD2DInputs\s*\[\s*2\s*\]/g, 'u_tex2');
@@ -422,5 +490,12 @@ export function wrapGlslTop(userCode: string): string {
   code = code.replace(/uTD2DInfos\s*\[\s*2\s*\]\s*\.\s*res/g, 'uTD2DInfoRes2');
   code = code.replace(/uTD2DInfos\s*\[\s*3\s*\]\s*\.\s*res/g, 'uTD2DInfoRes3');
 
-  return `${glslTopContractGlsl}${code}\n`;
+  // Replace uTDOutputInfo.res with named uniform
+  code = code.replace(/uTDOutputInfo\s*\.\s*res/g, 'u_TDOutputInfoRes');
+
+  return {
+    glsl: `${glslTopContractGlsl}${code}\n`,
+    hasDynamicIndex,
+    uses3DInputs,
+  };
 }
