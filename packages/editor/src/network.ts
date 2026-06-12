@@ -381,9 +381,14 @@ export class NetworkView {
       this.select(n);
       this.el.focus();
       const start = { x: e.clientX, y: e.clientY, nx: n.pos.x, ny: n.pos.y };
+      let dragged = false;
+      const THRESH = 3; // px threshold before drag starts
       const move = (ev: PointerEvent) => {
-        let nx = start.nx + (ev.clientX - start.x) / this.tf.k;
-        let ny = start.ny + (ev.clientY - start.y) / this.tf.k;
+        const dx = ev.clientX - start.x, dy = ev.clientY - start.y;
+        if (!dragged && Math.hypot(dx, dy) < THRESH) return;
+        dragged = true;
+        let nx = start.nx + dx / this.tf.k;
+        let ny = start.ny + dy / this.tf.k;
         if (this.gridSnap) {
           nx = Math.round(nx / 10) * 10;
           ny = Math.round(ny / 10) * 10;
