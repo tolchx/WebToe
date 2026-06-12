@@ -233,7 +233,10 @@ export class EditorApp {
     }) as EventListener);
     this.network = new NetworkView(net, this.engine, {
       onSelect: (n) => {
-        // No auto-show params — user clicks ⚙ icon or presses 'p'
+        // If the params panel is already open, update it to the new node
+        if (this.params && paramsEl.children.length > 0) {
+          this.params.show(n);
+        }
         this.refreshViewerTarget();
       },
       onStructureChange: () => this.refreshViewerTarget(),
