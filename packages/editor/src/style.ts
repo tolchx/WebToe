@@ -316,6 +316,12 @@ const CSS = `
 }
 .wt-wiremenu button:hover { background:#2a2a36; }
 
+/* Mobile: larger touch targets for context menus */
+@media (max-width: 768px) {
+  .wt-wiremenu { min-width: 180px; }
+  .wt-wiremenu button { padding: 12px 16px; font-size: 14px; min-height: 44px; }
+}
+
 /* ── Status bar (footer) ─────────────────────────────────────── */
 .wt-ftr {
   grid-area:ftr; display:flex; align-items:center; gap:12px;

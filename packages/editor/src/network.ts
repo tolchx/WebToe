@@ -751,6 +751,9 @@ export class NetworkView {
   private _pendingInputInsert: { dstNode: NodeInst; dstIdx: number } | null = null;
   /** Pending output insert: when set, the next created node is wired FROM this output */
   private _pendingOutputInsert: { srcNode: NodeInst } | null = null;
+  /** Long-press active flag for mobile box-select */
+  private _longPressActive = false;
+  private _longPressTimer: ReturnType<typeof setTimeout> | null = null;
 
   private createAt(type: string): void {
     const w = this.toWorld(this.lastPointer.x, this.lastPointer.y);
@@ -811,8 +814,10 @@ export class NetworkView {
     });
 
     el.addEventListener('pointerdown', (e) => {
-      // Box-select: Shift+LMB or RMB on empty area
-      if (e.shiftKey || e.button === 2) {
+      // Box-select: Shift+LMB, RMB, or long-press on empty area
+      const isLongPress = this._longPressActive;
+      this._longPressActive = false;
+      if (e.shiftKey || e.button === 2 || isLongPress) {
         e.preventDefault();
         this.palette.close();
         el.focus();
@@ -870,11 +875,33 @@ export class NetworkView {
       const up = () => {
         removeEventListener('pointermove', move);
         removeEventListener('pointerup', up);
+        if (this._longPressTimer) { clearTimeout(this._longPressTimer); this._longPressTimer = null; }
         // Snap after pan
         this.snapshot();
       };
       addEventListener('pointermove', move);
       addEventListener('pointerup', up);
+      // Mobile long-press: hold 500ms without moving → box-select
+      const longPressTimer = setTimeout(() => {
+        this._longPressActive = true;
+        const ne = new PointerEvent('pointerdown', { clientX: start.x, clientY: start.y, button: 2 });
+        el.dispatchEvent(ne);
+      }, 500);
+      this._longPressTimer = longPressTimer;
+      // Cancel long-press on first move
+      const origUp = up;
+      const cancelLongUp = () => {
+        if (this._longPressTimer) { clearTimeout(this._longPressTimer); this._longPressTimer = null; }
+        origUp();
+      };
+      const cancelLongMove = (ev: PointerEvent) => {
+        if (this._longPressTimer) { clearTimeout(this._longPressTimer); this._longPressTimer = null; }
+        move(ev);
+      };
+      removeEventListener('pointermove', move);
+      removeEventListener('pointerup', up);
+      addEventListener('pointermove', cancelLongMove);
+      addEventListener('pointerup', cancelLongUp);
     });
 
     // Prevent default context menu on network element (right-click → box-select)
