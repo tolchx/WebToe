@@ -36,6 +36,7 @@ export class EditorApp {
   private compositor!: HTMLCanvasElement;
   private importLabel!: HTMLLabelElement;
   private ftrEls!: { fpsEl: HTMLSpanElement; timingEl: HTMLSpanElement; nodeCountEl: HTMLSpanElement; errsEl: HTMLSpanElement };
+  private logEntries: { level: string; msg: string; time: number }[] = [];
   private frameCount = 0;
   private lastFpsTime = 0;
 
@@ -191,7 +192,14 @@ export class EditorApp {
     undoGroup.style.cssText = 'display:flex;gap:2px;';
     undoGroup.append(undoBtn, redoBtn);
 
-    ftr.append(fpsEl, timingEl, nodeCountEl, spacer2, undoGroup, addOpBtn, errsEl);
+    // Log panel toggle button
+    const logBtn = document.createElement('button');
+    logBtn.className = 'wt-addop';
+    logBtn.textContent = '📋';
+    logBtn.title = 'Log / History';
+    logBtn.addEventListener('click', () => this.toggleLog());
+
+    ftr.append(fpsEl, timingEl, nodeCountEl, spacer2, undoGroup, logBtn, addOpBtn, errsEl);
     this.ftrEls = { fpsEl, timingEl, nodeCountEl, errsEl };
 
     // ---- panels
@@ -551,12 +559,54 @@ export class EditorApp {
     this.host.querySelector('.wt-root')!.appendChild(overlay);
   }
 
-  private toast(msg: string): void {
+  /** Toggle the log/history panel */
+  private toggleLog(): void {
+    const existing = document.querySelector('.wt-logpanel');
+    if (existing) { existing.remove(); return; }
+    const panel = document.createElement('div');
+    panel.className = 'wt-logpanel';
+    const head = document.createElement('div');
+    head.className = 'wt-lphead';
+    head.innerHTML = '<span>📋 Log / History</span>';
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.addEventListener('click', () => panel.remove());
+    head.appendChild(closeBtn);
+    panel.appendChild(head);
+    const body = document.createElement('div');
+    body.className = 'wt-lpbody';
+    const levels: Record<string, string> = { error: '#e04040', warn: '#f5b342', success: '#22c55e', info: '#5a8ec9' };
+    [...this.logEntries].reverse().forEach((e) => {
+      const row = document.createElement('div');
+      row.className = 'wt-lprow';
+      const t = new Date(e.time);
+      const ts = `${t.getHours().toString().padStart(2,'0')}:${t.getMinutes().toString().padStart(2,'0')}:${t.getSeconds().toString().padStart(2,'0')}`;
+      row.innerHTML = `<span class="wt-lpts">${ts}</span><span class="wt-lplvl" style="color:${levels[e.level]||'#888'}">${e.level.toUpperCase()}</span><span class="wt-lpmsg">${e.msg}</span>`;
+      body.appendChild(row);
+    });
+    // Add info entries for common actions logged from callbacks
+    if (this.logEntries.length === 0) body.innerHTML = '<div style="color:#555;padding:20px;text-align:center;font-size:12px;">No log entries yet</div>';
+    panel.appendChild(body);
+    this.host.querySelector('.wt-root')!.appendChild(panel);
+    // Dismiss on Escape
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { panel.remove(); document.removeEventListener('keydown', onKey); } };
+    document.addEventListener('keydown', onKey);
+  }
+
+  private toast(msg: string, level = 'info'): void {
     const t = document.createElement('div');
     t.className = 'wt-toast';
     t.textContent = msg;
     this.host.querySelector('.wt-root')!.appendChild(t);
     setTimeout(() => t.remove(), 2600);
+    // Store in log (keep last 200)
+    this.logEntries.push({ level, msg, time: Date.now() });
+    if (this.logEntries.length > 200) this.logEntries.shift();
+    // Update errs counter for ERROR level
+    if (level === 'error') {
+      const errCount = this.logEntries.filter(e => e.level === 'error').length;
+      this.ftrEls.errsEl.textContent = `⚠️ ${errCount} error${errCount !== 1 ? 's' : ''}`;
+    }
   }
 
   /** Texture for any previewable output: TOPs directly, SOP/geo through the

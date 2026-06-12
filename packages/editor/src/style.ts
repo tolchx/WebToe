@@ -293,6 +293,26 @@ const CSS = `
   background:#1c1c22; border:1px solid #333; color:#ccc; padding:6px 14px;
   border-radius:4px; z-index:60; font-size:11px; max-width:70%; }
 
+/* Log/History panel */
+.wt-logpanel {
+  position:absolute; right:8px; bottom:36px; z-index:55;
+  width:380px; max-height:50vh; background:#18181e; border:1px solid #333;
+  border-radius:8px; display:flex; flex-direction:column;
+  box-shadow:0 4px 24px rgba(0,0,0,.6); overflow:hidden;
+}
+.wt-lphead {
+  display:flex; align-items:center; gap:8px; padding:6px 10px;
+  border-bottom:1px solid #2a2a30; font-size:11px; color:#aaa;
+}
+.wt-lphead button { background:none; border:none; color:#555; cursor:pointer;
+  font-size:14px; margin-left:auto; padding:0 2px; }
+.wt-lpbody { overflow-y:auto; flex:1; padding:2px 0; font:10px ui-monospace,monospace; }
+.wt-lprow { display:flex; gap:6px; padding:3px 10px; align-items:baseline; }
+.wt-lprow:hover { background:#1e1e26; }
+.wt-lpts { color:#555; flex:none; width:62px; }
+.wt-lplvl { flex:none; width:42px; font-weight:700; font-size:9px; }
+.wt-lpmsg { color:#ccc; flex:1; overflow:hidden; text-overflow:ellipsis; white-space:nowrap; }
+
 /* Wire context menu */
 .wt-wiremenu {
   position:fixed; z-index:100; background:#1c1c22; border:1px solid #333;
