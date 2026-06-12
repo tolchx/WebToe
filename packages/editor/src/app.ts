@@ -787,7 +787,21 @@ export class EditorApp {
   private togglePerformMode(): void {
     this.performMode = !this.performMode;
     this.rootEl.classList.toggle('wt-perform', this.performMode);
-    this.performExitBtn.style.display = this.performMode ? '' : 'none';
+    if (this.performMode) {
+      this.performExitBtn.style.display = '';
+      this.performExitBtn.style.opacity = '0.3';
+      // Auto-hide exit button after 3s
+      setTimeout(() => { if (this.performMode) this.performExitBtn.style.opacity = '0'; }, 3000);
+      // Show exit button on any pointer move
+      const showExit = () => {
+        if (!this.performMode) { document.removeEventListener('pointermove', showExit); return; }
+        this.performExitBtn.style.opacity = '1';
+        setTimeout(() => { if (this.performMode) this.performExitBtn.style.opacity = '0'; }, 3000);
+      };
+      document.addEventListener('pointermove', showExit);
+    } else {
+      this.performExitBtn.style.display = 'none';
+    }
   }
 
   /** Change pane layout */
@@ -857,7 +871,7 @@ export class EditorApp {
     }
 
     // live node previews at full frame rate, clipped to the network panel
-    if (gpu) {
+    if (gpu && !this.performMode) {
       const netClip = rel(this.netEl.getBoundingClientRect());
       for (const { node, el } of this.network.thumbTargets()) {
         const out = this.engine.cook(node);

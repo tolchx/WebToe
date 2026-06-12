@@ -509,16 +509,15 @@ const CSS = `
 .wt-perform .wt-net { display:none !important; }
 .wt-perform .wt-compositor { position:fixed; inset:0; z-index:100; }
 .wt-perform-exit {
-  position:fixed; top:10px; right:10px; z-index:101;
-  background: rgba(20,20,24,0.8); border: 1px solid #3a3a4a;
-  color: #ccc; cursor: pointer; border-radius: 6px;
-  display: flex; align-items: center; justify-content: center;
-  font-size: 16px; width: 32px; height: 32px;
-  opacity: 0.7; transition: opacity .2s;
+  position: fixed; top: 10px; right: 10px; z-index: 101;
+  background: rgba(20,20,24,.8); border: 1px solid #555; color: #ccc;
+  border-radius: 50%; width: 36px; height: 36px; cursor: pointer;
+  font-size: 18px; display: flex; align-items: center; justify-content: center;
+  transition: opacity .5s;
 }
 .wt-perform-exit:hover { opacity: 1; }
 
-/* ── Compact Node Size ──────────────────────────────────────────── */
+/* Preferences panel */
 .wt-compact-nodes .wt-node { width: 90px; }
 .wt-compact-nodes .wt-node .wt-label { font-size: 9px; padding: 2px 5px 0 7px; }
 .wt-compact-nodes .wt-node .wt-typ { font-size: 8px; padding: 0 5px 3px 7px; }
