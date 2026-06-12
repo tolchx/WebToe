@@ -250,25 +250,25 @@ export class NetworkView {
         this.startWireDrag(n, e);
       });
       el.appendChild(out);
-      }
+    }
 
-      // Gear icon to open parameters (visible when selected)
-      const gear = document.createElement('div');
-      gear.className = 'wt-gear';
-      gear.textContent = '⚙';
-      gear.title = 'Open parameters';
-      gear.addEventListener('click', (e) => {
-        e.stopPropagation();
-        this.callbacks.onSelect(n);
-        // Also forward to the parent editor app for params panel
-        const ev = new CustomEvent('wt-open-params', { detail: n });
-        this.el.dispatchEvent(ev);
-      });
-      el.appendChild(gear);
+    // Gear icon to open parameters (visible when selected)
+    const gear = document.createElement('div');
+    gear.className = 'wt-gear';
+    gear.textContent = '⚙';
+    gear.title = 'Open parameters';
+    gear.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.callbacks.onSelect(n);
+      const ev = new CustomEvent('wt-open-params', { detail: n });
+      this.el.dispatchEvent(ev);
+    });
+    el.appendChild(gear);
 
     // node interactions
     el.addEventListener('pointerdown', (e) => {
-      if ((e.target as HTMLElement).classList.contains('wt-stub')) return;
+      if ((e.target as HTMLElement).classList.contains('wt-stub') ||
+          (e.target as HTMLElement).classList.contains('wt-gear')) return;
       e.stopPropagation();
       this.select(n);
       this.el.focus();
