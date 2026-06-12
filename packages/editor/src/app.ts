@@ -196,9 +196,13 @@ export class EditorApp {
 
     this.viewer = new Viewer(viewerEl, this.engine);
     this.params = new ParamPanel(paramsEl, this.engine, () => { /* params are read live */ });
+    // Listen for gear icon clicks from the network
+    net.addEventListener('wt-open-params', ((e: CustomEvent) => {
+      this.params.show(e.detail);
+    }) as EventListener);
     this.network = new NetworkView(net, this.engine, {
       onSelect: (n) => {
-        this.params.show(n);
+        // No auto-show params — user clicks ⚙ icon or presses 'p'
         this.refreshViewerTarget();
       },
       onStructureChange: () => this.refreshViewerTarget(),

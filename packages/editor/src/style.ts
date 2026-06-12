@@ -89,6 +89,18 @@ const CSS = `
   border-radius:50%; border:1.5px solid #555; }
 .wt-node.wt-display .wt-flag { background:#f5b342; border-color:#f5b342; }
 
+/* Gear icon for opening params (visible on selected node) */
+.wt-gear {
+  position:absolute; right:6px; top:-10px;
+  font-size:13px; cursor:pointer; opacity:0;
+  transition:opacity .15s; z-index:6; width:20px; height:20px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:50%; background:#1c1c22; border:1px solid #333;
+  color:#999; line-height:1;
+}
+.wt-selected .wt-gear { opacity:1; }
+.wt-gear:hover { color:#fff; background:#2a2a36; }
+
 /* ── Stubs ───────────────────────────────────────────────────── */
 .wt-stub { position:absolute; width:9px; height:9px; border-radius:50%;
   background:#444; border:2px solid #141418; cursor:crosshair; z-index:5;

@@ -250,7 +250,21 @@ export class NetworkView {
         this.startWireDrag(n, e);
       });
       el.appendChild(out);
-    }
+      }
+
+      // Gear icon to open parameters (visible when selected)
+      const gear = document.createElement('div');
+      gear.className = 'wt-gear';
+      gear.textContent = '⚙';
+      gear.title = 'Open parameters';
+      gear.addEventListener('click', (e) => {
+        e.stopPropagation();
+        this.callbacks.onSelect(n);
+        // Also forward to the parent editor app for params panel
+        const ev = new CustomEvent('wt-open-params', { detail: n });
+        this.el.dispatchEvent(ev);
+      });
+      el.appendChild(gear);
 
     // node interactions
     el.addEventListener('pointerdown', (e) => {
@@ -601,6 +615,12 @@ export class NetworkView {
         this.goUp();
       } else if (e.key === 'd' && this.selected) {
         this.toggleDisplay(this.selected);
+      } else if (e.key === 'p') {
+        // Open parameters panel for selected node
+        if (this.selected) {
+          const ev = new CustomEvent('wt-open-params', { detail: this.selected });
+          this.el.dispatchEvent(ev);
+        }
       } else if (e.key === 'Escape') {
         this.palette.close();
       }
