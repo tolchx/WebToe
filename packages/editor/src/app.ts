@@ -178,23 +178,40 @@ export class EditorApp {
     side.className = 'wt-side';
     const viewerEl = document.createElement('div');
     const paramsEl = document.createElement('div');
-    // Viewer/params draggable splitter
+    // Viewer/params draggable splitter (works on touch + mouse via pointer events)
     const splitterEl = document.createElement('div');
     splitterEl.className = 'wt-splitter';
-    splitterEl.addEventListener('mousedown', (e) => {
+    splitterEl.addEventListener('pointerdown', (e) => {
       e.preventDefault();
-      const startX = e.clientX;
+      const isMobile = window.innerWidth < 768;
+      const startX = e.clientX, startY = e.clientY;
       const startW = viewerEl.getBoundingClientRect().width;
+      const startH = viewerEl.getBoundingClientRect().height;
       const sideW = side.getBoundingClientRect().width;
-      const onMove = (ev: MouseEvent) => {
-        const dw = ev.clientX - startX;
-        const ratio = (startW + dw) / sideW;
-        side.style.gridTemplateColumns = `${ratio}fr 4px ${1 - ratio}fr`;
-        side.style.gridTemplateRows = '1fr';
+      const sideH = side.getBoundingClientRect().height;
+      splitterEl.setPointerCapture(e.pointerId);
+      const onMove = (ev: PointerEvent) => {
+        if (isMobile) {
+          // Vertical resize on mobile
+          const dh = ev.clientY - startY;
+          const ratio = Math.max(0.15, Math.min(0.7, (startH + dh) / sideH));
+          side.style.gridTemplateRows = `${ratio}fr 4px ${1 - ratio}fr`;
+          side.style.gridTemplateColumns = '1fr';
+        } else {
+          // Horizontal resize on desktop
+          const dw = ev.clientX - startX;
+          const ratio = Math.max(0.2, Math.min(0.8, (startW + dw) / sideW));
+          side.style.gridTemplateColumns = `${ratio}fr 4px ${1 - ratio}fr`;
+          side.style.gridTemplateRows = '1fr';
+        }
       };
-      const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
-      document.addEventListener('mousemove', onMove);
-      document.addEventListener('mouseup', onUp);
+      const onUp = () => {
+        splitterEl.removeEventListener('pointermove', onMove);
+        splitterEl.removeEventListener('pointerup', onUp);
+        splitterEl.releasePointerCapture(e.pointerId);
+      };
+      splitterEl.addEventListener('pointermove', onMove);
+      splitterEl.addEventListener('pointerup', onUp);
     });
     viewerEl.style.gridRow = '1'; viewerEl.style.gridColumn = '1';
     splitterEl.style.gridRow = '1'; splitterEl.style.gridColumn = '2';

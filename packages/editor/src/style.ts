@@ -137,7 +137,7 @@ const CSS = `
   width:4px; cursor:ew-resize; background:#22222a;
   border-left:1px solid #2a2a30; border-right:1px solid #2a2a30;
   flex:none; transition:background .1s;
-  position:relative; z-index:3;
+  position:relative; z-index:3; touch-action:none;
 }
 .wt-splitter:hover { background:#33333e; }
 .wt-splitter::after {
@@ -305,6 +305,7 @@ const CSS = `
   .wt-side { border-left: none; border-bottom: 2px solid #2a2a30; max-height: 45vh;
     grid-template-columns: 1fr; grid-template-rows: auto 4px 1fr; }
   .wt-side .wt-viewer, .wt-side .wt-splitter, .wt-side .wt-params { grid-row:auto; grid-column:auto; }
+  .wt-side .wt-splitter { width:auto; height:4px; cursor:ns-resize; border-left:none; border-right:none; border-top:1px solid #2a2a30; border-bottom:1px solid #2a2a30; }
   .wt-viewer { height: 180px; overflow:hidden; border-bottom:none; }
   .wt-params { font-size: 11px; }
   .wt-node { width: 110px; }
