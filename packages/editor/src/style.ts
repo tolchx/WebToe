@@ -303,8 +303,14 @@ const CSS = `
   .wt-prow input.wt-num { width: 60px; font-size: 11px; }
   .wt-prow .wt-exprbtn { width: 26px; height: 26px; font-size: 12px; }
   .wt-prow input[type="checkbox"] { width: 22px; height: 22px; }
-  .wt-bar { gap: 4px; padding: 0 6px; overflow-x: auto; }
-  .wt-bar button, .wt-bar select, .wt-bar label.wt-filebtn { padding: 5px 8px; font-size: 11px; min-height: 32px; }
+  .wt-bar .wt-hud, .wt-bar input.wt-projname { display: none; }
+  /* Show only icons, hide text labels on mobile toolbar */
+  .wt-bar .wt-bi { font-size: 14px; }
+  .wt-bar .wt-bt { display: none; }
+  .wt-bar button, .wt-bar select, .wt-bar label.wt-filebtn { padding: 5px 8px; font-size: 11px; min-height: 32px; min-width: 32px; justify-content: center; }
+  /* Preserve examples select text */
+  .wt-bar select .wt-bi { display: none; }
+  .wt-bar select .wt-bt { display: inline; }
   .wt-bar .wt-title { font-size: 12px; }
   .wt-bar input.wt-projname { width: 80px; font-size: 10px; }
   .wt-ftr { font-size: 8px; gap: 8px; padding: 0 6px; }

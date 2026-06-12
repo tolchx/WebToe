@@ -60,8 +60,8 @@ export class EditorApp {
     this.projName.value = 'untitled';
     this.projName.spellcheck = false;
 
-    const newBtn = button('new', () => this.newProject());
-    const saveBtn = button('save', () => saveProjectFile(this.engine.graph, this.projName.value));
+    const newBtn = button('new', () => this.newProject(), '📄');
+    const saveBtn = button('save', () => saveProjectFile(this.engine.graph, this.projName.value), '💾');
     const loadLabel = fileButton('load', '.json,.webtoe.json,.toe,.tox', async (file) => {
       if (/\.(toe|tox)$/i.test(file.name)) {
         this.showToeGuide(file.name);
@@ -616,9 +616,9 @@ export class EditorApp {
   };
 }
 
-function button(label: string, onClick: () => void): HTMLButtonElement {
+function button(label: string, onClick: () => void, icon = ''): HTMLButtonElement {
   const b = document.createElement('button');
-  b.textContent = label;
+  b.innerHTML = icon ? `<span class="wt-bi">${icon}</span><span class="wt-bt">${label}</span>` : label;
   b.addEventListener('click', onClick);
   return b;
 }
@@ -661,7 +661,8 @@ function fileButton(
 ): HTMLLabelElement {
   const l = document.createElement('label');
   l.className = 'wt-filebtn';
-  l.textContent = label;
+  const icon = label === 'load' ? '📂' : '📁';
+  l.innerHTML = `<span class="wt-bi">${icon}</span><span class="wt-bt">${label}</span>`;
   const input = document.createElement('input');
   input.type = 'file';
   if (accept) input.accept = accept;
