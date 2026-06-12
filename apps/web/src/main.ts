@@ -1,6 +1,17 @@
 import { initVideoKernelsWasm, registerAllOps } from '@webtoe/ops';
 import { mountEditor } from '@webtoe/editor';
 
+// Suppress harmless Chrome extension "message port closed" warnings
+window.addEventListener('unhandledrejection', (e) => {
+  if ((e.reason?.message || '').includes('message port closed')) e.preventDefault();
+});
+// Also suppress runtime.lastError in console output
+const _origError = console.error;
+console.error = (...args: unknown[]) => {
+  if (typeof args[0] === 'string' && args[0].includes('runtime.lastError')) return;
+  return _origError.apply(console, args);
+};
+
 registerAllOps();
 
 const base = import.meta.env.BASE_URL;
