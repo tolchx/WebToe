@@ -274,22 +274,6 @@ export class NetworkView {
       out.title = `output 0 · ${spec.family} (${outDesc}) — drag onto an input`;
       out.addEventListener('pointerdown', (e) => {
         e.stopPropagation();
-        let moved = false;
-        const onMove = () => { moved = true; };
-        const onUp = () => {
-          removeEventListener('pointermove', onMove);
-          removeEventListener('pointerup', onUp);
-          if (!moved) {
-            // Click without drag → open palette to add a node wired from this output
-            this._pendingOutputInsert = { srcNode: n };
-            const r = this.el.getBoundingClientRect();
-            this.palette.open(e.clientX - r.left, e.clientY - r.top, spec.family);
-          } else {
-            // Drag → wire connect mode (already started by startWireDrag)
-          }
-        };
-        addEventListener('pointermove', onMove);
-        addEventListener('pointerup', onUp);
         this.startWireDrag(n, e);
       });
       el.appendChild(out);
