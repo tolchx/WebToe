@@ -488,14 +488,25 @@ export class EditorApp {
   // ------------------------------------------------------------ video export
 
   private exportVideo(): void {
-    const canvas = this.compositor;
-    const stream = canvas.captureStream(30);
+    // Create a dedicated canvas that renders ONLY the viewer output
+    const recordCanvas = document.createElement('canvas');
+    recordCanvas.width = 1280;
+    recordCanvas.height = 720;
+    const ctx = recordCanvas.getContext('2d')!;
+    ctx.fillStyle = '#0e0e12';
+    ctx.fillRect(0, 0, 1280, 720);
+
+    const outputCanvas = this.compositor;
+    const viewerEl = this.viewer?.el;
+    if (!viewerEl) { this.toast('no viewer'); return; }
+    const stream = recordCanvas.captureStream(30);
     const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
     const chunks: Blob[] = [];
     recorder.ondataavailable = (e) => {
       if (e.data.size) chunks.push(e.data);
     };
     recorder.onstop = () => {
+      cancelAnimationFrame(rafId);
       const blob = new Blob(chunks, { type: 'video/webm' });
       const a = document.createElement('a');
       a.href = URL.createObjectURL(blob);
@@ -506,7 +517,27 @@ export class EditorApp {
     };
     this.toast('recording 10s…');
     recorder.start();
-    setTimeout(() => recorder.stop(), 10_000);
+
+    // Copy viewer region from compositor to record canvas each frame
+    let rafId = 0;
+    const copyFrame = () => {
+      rafId = requestAnimationFrame(copyFrame);
+      const r = viewerEl.getBoundingClientRect();
+      const cr = this.rootEl.getBoundingClientRect();
+      const relX = r.x - cr.x;
+      const relY = r.y - cr.y;
+      ctx.drawImage(
+        outputCanvas,
+        relX, relY, r.width, r.height,
+        0, 0, 1280, 720
+      );
+    };
+    rafId = requestAnimationFrame(copyFrame);
+
+    setTimeout(() => {
+      cancelAnimationFrame(rafId);
+      recorder.stop();
+    }, 10_000);
   }
 
   private loop = (): void => {
