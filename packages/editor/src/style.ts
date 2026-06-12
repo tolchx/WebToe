@@ -272,6 +272,13 @@ const CSS = `
 .wt-ftr .wt-spacer2 { flex:1; }
 .wt-ftr .wt-timing { color:#666; }
 .wt-ftr .wt-nodecount { color:#666; }
+.wt-ftr .wt-addop {
+  background:none; border:1px solid #333; color:#888; border-radius:3px;
+  cursor:pointer; font-size:13px; width:22px; height:20px;
+  display:flex; align-items:center; justify-content:center; padding:0; line-height:1;
+  transition:color .1s, border-color .1s;
+}
+.wt-ftr .wt-addop:hover { color:#ddd; border-color:#666; }
 
 /* ── Dark mode por preferencia del sistema ──────────────────────── */
 @media (prefers-color-scheme: light) {
@@ -314,6 +321,7 @@ const CSS = `
   .wt-bar .wt-title { font-size: 12px; }
   .wt-bar input.wt-projname { width: 80px; font-size: 10px; }
   .wt-ftr { font-size: 8px; gap: 8px; padding: 0 6px; }
+  .wt-ftr .wt-addop { width: 28px; height: 26px; font-size: 16px; }
   .wt-palette { width: 92vw; max-height: 65vh; left: 4vw; }
   .wt-palette .wt-pgrid { grid-template-columns: repeat(2, 1fr); }
   .wt-palette .wt-pitem { padding: 8px 10px; min-height: 36px; }

@@ -157,7 +157,18 @@ export class EditorApp {
     errsEl.className = 'wt-errs';
     const spacer2 = document.createElement('span');
     spacer2.className = 'wt-spacer2';
-    ftr.append(fpsEl, timingEl, nodeCountEl, spacer2, errsEl);
+
+    // "+" button in footer to add operators
+    const addOpBtn = document.createElement('button');
+    addOpBtn.className = 'wt-addop';
+    addOpBtn.textContent = '+';
+    addOpBtn.title = 'Add operator (Tab)';
+    addOpBtn.addEventListener('click', () => {
+      const r = this.netEl.getBoundingClientRect();
+      this.network?.palette?.open(r.left + r.width / 2, r.top + r.height / 2);
+    });
+
+    ftr.append(fpsEl, timingEl, nodeCountEl, spacer2, addOpBtn, errsEl);
     this.ftrEls = { fpsEl, timingEl, nodeCountEl, errsEl };
 
     // ---- panels
