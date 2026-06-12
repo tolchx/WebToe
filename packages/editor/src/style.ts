@@ -147,9 +147,9 @@ const CSS = `
 
 /* ── Viewer ──────────────────────────────────────────────────── */
 .wt-viewer { position:relative; background:#0e0e12; border-bottom:1px solid #2a2a30;
-  overflow:hidden; min-height:0; }
-.wt-viewer canvas.wt-gl { position:absolute; inset:0; width:100%; height:100%; }
-.wt-viewer canvas.wt-scope { position:absolute; inset:0; width:100%; height:100%; }
+  overflow:hidden; min-height:0; display:flex; align-items:center; justify-content:center; }
+.wt-viewer canvas.wt-gl { display:none; }
+.wt-viewer canvas.wt-scope { display:block; flex:none; max-width:100%; max-height:100%; }
 .wt-viewer pre.wt-dattext { position:absolute; inset:0; margin:0; padding:10px;
   overflow:auto; font:10px/1.4 ui-monospace,monospace; color:#aadd44; }
 .wt-viewer .wt-viewname { position:absolute; left:8px; bottom:6px; color:#666;

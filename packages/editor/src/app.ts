@@ -275,7 +275,7 @@ export class EditorApp {
       }
     };
     new ResizeObserver(() => { this.viewer.fit(); fitCompositor(); }).observe(root);
-    new ResizeObserver(() => this.viewer.fit()).observe(viewerEl);
+    new ResizeObserver(() => { this.viewer.fit(); }).observe(viewerEl);
     this.viewer.fit();
     fitCompositor();
     this.bindDropIntake(root);
@@ -653,7 +653,16 @@ export class EditorApp {
     const vTarget = this.viewer.target;
     if (gpu && vTarget?.output && ['top', 'sop', 'obj'].includes(vTarget.output.kind)) {
       const tex = cachedTexFor(vTarget, vTarget.output);
-      if (tex) gpu.blitToCanvas(tex, rel(this.viewer.el.getBoundingClientRect()));
+      if (tex) {
+        const vr = this.viewer.el.getBoundingClientRect();
+        const cr = this.viewer.contentRect;
+        gpu.blitToCanvas(tex, rel({
+          x: vr.left + cr.x,
+          y: vr.top + cr.y,
+          width: cr.w,
+          height: cr.h,
+        }));
+      }
     }
 
     // live node previews at full frame rate, clipped to the network panel

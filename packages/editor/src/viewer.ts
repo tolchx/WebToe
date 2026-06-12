@@ -9,6 +9,10 @@ export class Viewer {
   private readonly nameTag: HTMLDivElement;
   private history = new Map<string, number[]>();
   target: NodeInst | null = null;
+  /** Current aspect ratio (w/h) or 0 for Free */
+  ratioValue = 0;
+  /** Content rect within the viewer, letterboxed to match ratioValue */
+  contentRect = { x: 0, y: 0, w: 0, h: 0 };
 
   constructor(readonly el: HTMLElement, private readonly engine: Engine) {
     el.className = 'wt-viewer';
@@ -55,25 +59,45 @@ export class Viewer {
   /** Apply aspect ratio to the viewer element */
   private applyRatio(ratio: string): void {
     if (ratio === 'Free') {
+      this.ratioValue = 0;
       this.el.style.aspectRatio = '';
       this.el.style.height = '';
-      this.el.style.flex = '1';
     } else {
       const [w, h] = ratio.split(':').map(Number);
-      const cssRatio = `${w}/${h}`;
-      // Letterbox: reserve space via aspect-ratio, fill with the scope
-      this.el.style.aspectRatio = cssRatio;
-      this.el.style.flex = 'none';
-      this.el.style.width = '';  // let grid column control width
-      this.el.style.height = ''; // let aspect-ratio handle height
+      this.ratioValue = w / h;
+      this.el.style.aspectRatio = String(this.ratioValue);
+      this.el.style.height = '';
     }
+    this.recalcContent();
     this.fit();
   }
 
+  private recalcContent(): void {
+    const cw = this.el.clientWidth;
+    const ch = this.el.clientHeight;
+    if (this.ratioValue === 0 || cw === 0 || ch === 0) {
+      this.contentRect = { x: 0, y: 0, w: cw, h: ch };
+      return;
+    }
+    const containerRatio = cw / ch;
+    if (containerRatio > this.ratioValue) {
+      // Container is wider → pillarbox (black bars on sides)
+      const h = ch;
+      const w = ch * this.ratioValue;
+      this.contentRect = { x: (cw - w) / 2, y: 0, w, h };
+    } else {
+      // Container is taller → letterbox (black bars top/bottom)
+      const w = cw;
+      const h = cw / this.ratioValue;
+      this.contentRect = { x: 0, y: (ch - h) / 2, w, h };
+    }
+  }
+
   fit(): void {
+    this.recalcContent();
     const dpr = Math.min(devicePixelRatio || 1, 2);
-    const w = Math.max(2, Math.round(this.el.clientWidth * dpr));
-    const h = Math.max(2, Math.round(this.el.clientHeight * dpr));
+    const w = Math.max(2, Math.round(this.contentRect.w * dpr));
+    const h = Math.max(2, Math.round(this.contentRect.h * dpr));
     if (this.scope.width !== w || this.scope.height !== h) {
       this.scope.width = w;
       this.scope.height = h;
