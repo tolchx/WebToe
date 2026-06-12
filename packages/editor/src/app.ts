@@ -131,17 +131,24 @@ export class EditorApp {
     hamBtn.textContent = '☰';
     hamBtn.title = 'Toggle toolbar';
     hamBtn.addEventListener('click', () => {
-      const btns = bar.querySelectorAll('button, select, label');
-      let anyHidden = false;
-      btns.forEach((b) => { if ((b as HTMLElement).style.display === 'none') anyHidden = true; });
-      btns.forEach((b) => {
+      const items = bar.querySelectorAll(':scope > :not(.wt-hamburger):not(.wt-spacer):not(.wt-title)');
+      let anyVisible = false;
+      items.forEach((b) => { if ((b as HTMLElement).style.display !== 'none') anyVisible = true; });
+      items.forEach((b) => {
         const el = b as HTMLElement;
-        if (el === hamBtn || el.classList.contains('wt-hud') || el.closest('.wt-repo') || el.closest('[class*="mcp"]')) return;
-        el.style.display = anyHidden ? '' : 'none';
+        el.style.display = anyVisible ? 'none' : '';
       });
     });
     // On mobile, collapse toolbar by default
-    if (window.innerWidth < 768) hamBtn.click();
+    if (window.innerWidth < 768) {
+      // Hide examples text, use icon only
+      examples.style.fontSize = '0';
+      const exIcon = document.createElement('span');
+      exIcon.textContent = '📋';
+      exIcon.style.cssText = 'font-size:14px;pointer-events:none;';
+      examples.prepend(exIcon);
+      hamBtn.click();
+    }
     bar.appendChild(hamBtn);
 
     // ---- footer / status bar

@@ -322,6 +322,7 @@ const CSS = `
   .wt-prow input.wt-num { width: 60px; font-size: 11px; }
   .wt-prow .wt-exprbtn { width: 26px; height: 26px; font-size: 12px; }
   .wt-prow input[type="checkbox"] { width: 22px; height: 22px; }
+  .wt-bar .wt-hamburger { position:sticky; right:0; z-index:2; }
   .wt-bar .wt-hud, .wt-bar input.wt-projname { display: none; }
   /* Show only icons, hide text labels on mobile toolbar */
   .wt-bar .wt-bi { font-size: 14px; }
