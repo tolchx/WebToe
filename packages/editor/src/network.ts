@@ -246,6 +246,11 @@ export class NetworkView {
             this.updateWires();
           });
           this.startWireDrag(src, e);
+        } else {
+          // Open palette to add a compatible node wired to this input
+          this._pendingInputInsert = { dstNode: n, dstIdx: i };
+          const r = this.el.getBoundingClientRect();
+          this.palette.open(e.clientX - r.left, e.clientY - r.top, spec.family);
         }
       });
       el.appendChild(stub);
@@ -260,6 +265,22 @@ export class NetworkView {
       out.title = `output 0 · ${spec.family} (${outDesc}) — drag onto an input`;
       out.addEventListener('pointerdown', (e) => {
         e.stopPropagation();
+        let moved = false;
+        const onMove = () => { moved = true; };
+        const onUp = () => {
+          removeEventListener('pointermove', onMove);
+          removeEventListener('pointerup', onUp);
+          if (!moved) {
+            // Click without drag → open palette to add a node wired from this output
+            this._pendingOutputInsert = { srcNode: n };
+            const r = this.el.getBoundingClientRect();
+            this.palette.open(e.clientX - r.left, e.clientY - r.top, spec.family);
+          } else {
+            // Drag → wire connect mode (already started by startWireDrag)
+          }
+        };
+        addEventListener('pointermove', onMove);
+        addEventListener('pointerup', onUp);
         this.startWireDrag(n, e);
       });
       el.appendChild(out);
@@ -625,6 +646,10 @@ export class NetworkView {
 
   /** Pending parallel insert: when set, the next created node connects in parallel */
   private _pendingParallelInsert: { dstNode: NodeInst; dstIdx: number } | null = null;
+  /** Pending input insert: when set, the next created node connects TO this input */
+  private _pendingInputInsert: { dstNode: NodeInst; dstIdx: number } | null = null;
+  /** Pending output insert: when set, the next created node is wired FROM this output */
+  private _pendingOutputInsert: { srcNode: NodeInst } | null = null;
 
   private createAt(type: string): void {
     const w = this.toWorld(this.lastPointer.x, this.lastPointer.y);
@@ -632,6 +657,10 @@ export class NetworkView {
     this._pendingWireInsert = null;
     const parallel = this._pendingParallelInsert;
     this._pendingParallelInsert = null;
+    const inputInsert = this._pendingInputInsert;
+    this._pendingInputInsert = null;
+    const outputInsert = this._pendingOutputInsert;
+    this._pendingOutputInsert = null;
     try {
       let created: NodeInst | undefined;
       this.undoable(() => {
@@ -650,6 +679,14 @@ export class NetworkView {
           const dstNode = parallel.dstNode;
           n.pos = { x: dstNode.pos.x - 160, y: dstNode.pos.y + 80 };
           this.engine.graph.connect(n, dstNode, 0);
+        } else if (inputInsert) {
+          // New node placed to the left of the destination, wired into its input
+          n.pos = { x: inputInsert.dstNode.pos.x - 200, y: inputInsert.dstNode.pos.y };
+          this.engine.graph.connect(n, inputInsert.dstNode, inputInsert.dstIdx);
+        } else if (outputInsert) {
+          // New node placed to the right of the source, wired from its output
+          n.pos = { x: outputInsert.srcNode.pos.x + 160, y: outputInsert.srcNode.pos.y };
+          this.engine.graph.connect(outputInsert.srcNode, n, 0);
         } else {
           n.pos = { x: w.x, y: w.y };
         }
