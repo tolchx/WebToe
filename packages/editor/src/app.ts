@@ -204,6 +204,46 @@ export class EditorApp {
     this.viewer.fit();
     fitCompositor();
     this.bindDropIntake(root);
+    // Mobile navigation overlay (visible only on small screens via CSS)
+    const mobileNav = document.createElement('div');
+    mobileNav.className = 'wt-mobilenav';
+    const zoomIn = document.createElement('button');
+    zoomIn.textContent = '+';
+    zoomIn.title = 'Zoom in';
+    zoomIn.addEventListener('click', () => this.network?.zoomStep(1));
+    const zoomOut = document.createElement('button');
+    zoomOut.textContent = '−';
+    zoomOut.title = 'Zoom out';
+    zoomOut.addEventListener('click', () => this.network?.zoomStep(-1));
+    const homeBtn = document.createElement('button');
+    homeBtn.innerHTML = '⌂';
+    homeBtn.title = 'Reset view';
+    homeBtn.addEventListener('click', () => this.network?.resetView());
+    mobileNav.append(zoomOut, homeBtn, zoomIn);
+    root.appendChild(mobileNav);
+
+    // Fullscreen toggle for viewer
+    const fsBtn = document.createElement('button');
+    fsBtn.className = 'wt-fsbtn';
+    fsBtn.textContent = '⛶';
+    fsBtn.title = 'Fullscreen preview';
+    fsBtn.addEventListener('click', () => {
+      if (viewerEl.requestFullscreen) viewerEl.requestFullscreen();
+    });
+    viewerEl.appendChild(fsBtn);
+
+    // Back button for viewer fullscreen
+    const backBtn = document.createElement('button');
+    backBtn.className = 'wt-backbtn';
+    backBtn.innerHTML = '‹';
+    backBtn.title = 'Exit fullscreen';
+    backBtn.addEventListener('click', () => { if (document.exitFullscreen) document.exitFullscreen(); });
+    backBtn.style.display = 'none';
+    viewerEl.appendChild(backBtn);
+    document.addEventListener('fullscreenchange', () => {
+      backBtn.style.display = document.fullscreenElement ? '' : 'none';
+    });
+
     // AI Chat Panel (Ctrl+Shift+A) — conecta al WebToe MCP Bridge
     if (this.opts.bridgeUrl) {
       new AiChatPanel(this, { bridgeUrl: this.opts.bridgeUrl });

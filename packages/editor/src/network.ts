@@ -14,13 +14,16 @@ export class NetworkView {
   private readonly world: HTMLDivElement;
   private readonly svg: SVGSVGElement;
   private readonly crumb: HTMLDivElement;
-  private readonly palette: Palette;
+  palette: Palette;
   private readonly nodeEls = new Map<number, HTMLDivElement>();
   private readonly thumbs = new Map<number, HTMLDivElement>();
   private tf: ViewTransform = { x: 60, y: 60, k: 1 };
   private preview: SVGPathElement | null = null;
   private dragWireSrc: NodeInst | null = null;
   private lastPointer = { x: 200, y: 200 };
+  // Pinch zoom state
+  private pinchDist = 0;
+  private pinchTf = { x: 0, y: 0, k: 1 };
 
   constructor(
     private readonly el: HTMLElement,
@@ -332,6 +335,30 @@ export class NetworkView {
     this.world.style.transform = `translate(${this.tf.x}px, ${this.tf.y}px) scale(${this.tf.k})`;
   }
 
+  /** Zoom by factor `f` centered on screen point (cx,cy client coords) */
+  private zoomAt(cx: number, cy: number, factor: number): void {
+    const r = this.el.getBoundingClientRect();
+    const lx = cx - r.left, ly = cy - r.top;
+    const k = Math.min(4, Math.max(0.08, this.tf.k * factor));
+    this.tf.x = lx - ((lx - this.tf.x) / this.tf.k) * k;
+    this.tf.y = ly - ((ly - this.tf.y) / this.tf.k) * k;
+    this.tf.k = k;
+    this.applyTransform();
+  }
+
+  /** Zoom in/out by a step (call from buttons) */
+  zoomStep(dir: number): void {
+    this.zoomAt(this.el.clientWidth / 2, this.el.clientHeight / 2, dir > 0 ? 1.3 : 1 / 1.3);
+  }
+
+  /** Reset view to center */
+  resetView(): void {
+    this.tf.x = 60;
+    this.tf.y = 60;
+    this.tf.k = 1;
+    this.applyTransform();
+  }
+
   private createAt(type: string): void {
     const w = this.toWorld(this.lastPointer.x, this.lastPointer.y);
     try {
@@ -380,13 +407,35 @@ export class NetworkView {
 
     el.addEventListener('wheel', (e) => {
       e.preventDefault();
-      const r = el.getBoundingClientRect();
-      const cx = e.clientX - r.left, cy = e.clientY - r.top;
-      const k = Math.min(3, Math.max(0.12, this.tf.k * Math.pow(1.0015, -e.deltaY)));
-      this.tf.x = cx - ((cx - this.tf.x) / this.tf.k) * k;
-      this.tf.y = cy - ((cy - this.tf.y) / this.tf.k) * k;
-      this.tf.k = k;
-      this.applyTransform();
+      this.zoomAt(e.clientX, e.clientY, Math.pow(1.0015, -e.deltaY));
+    }, { passive: false });
+
+    // Mobile: pinch-to-zoom + prevent double-tap zoom
+    el.addEventListener('touchstart', (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        this.pinchDist = Math.hypot(dx, dy);
+        this.pinchTf = { ...this.tf };
+      }
+    }, { passive: false });
+
+    el.addEventListener('touchmove', (e) => {
+      if (e.touches.length === 2) {
+        e.preventDefault();
+        const dx = e.touches[0].clientX - e.touches[1].clientX;
+        const dy = e.touches[0].clientY - e.touches[1].clientY;
+        const dist = Math.hypot(dx, dy);
+        const r = el.getBoundingClientRect();
+        const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left;
+        const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top;
+        const k = this.pinchTf.k * (dist / this.pinchDist);
+        this.tf.k = Math.min(4, Math.max(0.08, k));
+        this.tf.x = cx - ((cx - this.pinchTf.x) / this.pinchTf.k) * this.tf.k;
+        this.tf.y = cy - ((cy - this.pinchTf.y) / this.pinchTf.k) * this.tf.k;
+        this.applyTransform();
+      }
     }, { passive: false });
 
     el.addEventListener('keydown', (e) => {
