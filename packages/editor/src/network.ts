@@ -382,7 +382,7 @@ export class NetworkView {
       this.el.focus();
       const start = { x: e.clientX, y: e.clientY, nx: n.pos.x, ny: n.pos.y };
       let dragged = false;
-      const THRESH = 3; // px threshold before drag starts
+      const THRESH = 5; // px threshold before drag starts
       const move = (ev: PointerEvent) => {
         const dx = ev.clientX - start.x, dy = ev.clientY - start.y;
         if (!dragged && Math.hypot(dx, dy) < THRESH) return;
