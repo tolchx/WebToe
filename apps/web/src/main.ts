@@ -14,7 +14,7 @@ app.style.cssText = 'position:fixed;inset:0;';
 
 
 const editorPromise = mountEditor(app, {
-  bridgeUrl: 'http://localhost:3001',
+  bridgeUrl: window.location.hostname === 'localhost' || window.location.hostname === '127.0.0.1' ? 'http://127.0.0.1:3001' : '',
   examples: [
     { name: '01 hello noise', url: `${base}examples/01-hello-noise.webtoe.json` },
     { name: '02 feedback trails', url: `${base}examples/02-feedback-trails.webtoe.json` },

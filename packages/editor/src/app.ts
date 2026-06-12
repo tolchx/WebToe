@@ -289,7 +289,11 @@ export class EditorApp {
   // MCP Bridge status check
   private checkMcpStatus(el: HTMLElement): void {
     const ball = el.querySelector('span') as HTMLElement;
-    const bridgeUrl = this.opts.bridgeUrl?.replace(/\/api.*$/, '') || 'http://localhost:3001';
+    const bridgeUrl = this.opts.bridgeUrl?.replace(/\/api.*$/, '') || '';
+    if (!bridgeUrl) {
+      el.style.display = 'none'; // hide MCP indicator in production
+      return;
+    }
     const timer = setInterval(() => {
       const controller = new AbortController();
       const to = setTimeout(() => controller.abort(), 2000);
