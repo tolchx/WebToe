@@ -136,7 +136,7 @@ const CSS = `
 .wt-stub.wt-in { left:-5px; }
 
 /* ── Side ────────────────────────────────────────────────────── */
-.wt-side { grid-area:side; display:grid; grid-template-columns:1fr 4px 1fr;
+.wt-side { grid-area:side; display:grid; grid-template-columns:1fr 4px 1fr; grid-template-rows:1fr;
   min-height:0; border-left:1px solid #2a2a30; background:#18181e; }
 
 /* ── Viewer ──────────────────────────────────────────────────── */
