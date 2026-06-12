@@ -382,7 +382,7 @@ export class NetworkView {
       this.el.focus();
       const start = { x: e.clientX, y: e.clientY, nx: n.pos.x, ny: n.pos.y };
       let dragged = false;
-      const THRESH = 5; // px threshold before drag starts
+      const THRESH = 8; // px threshold before drag starts
       const move = (ev: PointerEvent) => {
         const dx = ev.clientX - start.x, dy = ev.clientY - start.y;
         if (!dragged && Math.hypot(dx, dy) < THRESH) return;
@@ -433,7 +433,7 @@ export class NetworkView {
         if (!file) return;
         const reader = new FileReader();
         reader.onload = () => {
-          n.params.set('file', reader.result as string);
+          n.params.set('file', { mode: 'const', value: reader.result as string });
           n.cookedFrame = -1;
           this.callbacks.onStructureChange();
           this.callbacks.toast(`dropped: ${file.name}`);
@@ -483,15 +483,15 @@ export class NetworkView {
       this.dragWireSrc = null;
       if (!src2) return;
       // Find the nearest input stub (more reliable than elementFromPoint)
-      const allStubs = this.el.querySelectorAll('.wt-stub.wt-in') as NodeListOf<HTMLElement>;
-      let bestStub: HTMLElement | null = null;
+      const allStubs = [...this.el.querySelectorAll('.wt-stub.wt-in')] as HTMLElement[];
+      let bestStub: HTMLElement | undefined;
       let bestDist = 30; // snap threshold in CSS pixels
-      allStubs.forEach((s) => {
+      for (const s of allStubs) {
         const r = s.getBoundingClientRect();
         const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
         const d = Math.hypot(ev.clientX - cx, ev.clientY - cy);
         if (d < bestDist) { bestDist = d; bestStub = s; }
-      });
+      }
       if (!bestStub) return;
       const nodeEl = bestStub.closest('.wt-node') as HTMLElement;
       const dst = this.engine.graph.childrenOf(this.current).find((c) => String(c.id) === nodeEl.dataset.id);
@@ -886,7 +886,7 @@ export class NetworkView {
             // Set the node's 'file' param
             const fileParam = spec.params?.find((p: any) => p.key === 'file');
             if (fileParam) {
-              n.params.set('file', dataUrl);
+              n.params.set('file', { mode: 'const', value: dataUrl });
               // Force recook
               n.cookedFrame = -1;
               this.callbacks.onStructureChange();
@@ -1092,27 +1092,6 @@ export class NetworkView {
       };
       addEventListener('pointermove', move);
       addEventListener('pointerup', up);
-      // Mobile long-press: hold 500ms without moving → box-select
-      const longPressTimer = setTimeout(() => {
-        this._longPressActive = true;
-        const ne = new PointerEvent('pointerdown', { clientX: start.x, clientY: start.y, button: 2 });
-        el.dispatchEvent(ne);
-      }, 500);
-      this._longPressTimer = longPressTimer;
-      // Cancel long-press on first move
-      const origUp = up;
-      const cancelLongUp = () => {
-        if (this._longPressTimer) { clearTimeout(this._longPressTimer); this._longPressTimer = null; }
-        origUp();
-      };
-      const cancelLongMove = (ev: PointerEvent) => {
-        if (this._longPressTimer) { clearTimeout(this._longPressTimer); this._longPressTimer = null; }
-        move(ev);
-      };
-      removeEventListener('pointermove', move);
-      removeEventListener('pointerup', up);
-      addEventListener('pointermove', cancelLongMove);
-      addEventListener('pointerup', cancelLongUp);
     });
 
     // Prevent default context menu on network element (right-click → box-select)
@@ -1120,7 +1099,8 @@ export class NetworkView {
 
     el.addEventListener('dblclick', (e) => {
       // Check if double-clicking on a wire
-      const pathTarget = (e.target as HTMLElement).closest?.('path');
+      const t = e.target;
+      const pathTarget = t instanceof Element ? t.closest('path') : null;
       if (pathTarget && pathTarget.dataset.family) {
         const srcId = Number(pathTarget.dataset.srcId);
         const dstId = Number(pathTarget.dataset.dstId);
