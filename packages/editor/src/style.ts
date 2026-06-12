@@ -101,6 +101,32 @@ const CSS = `
 .wt-selected .wt-gear { opacity:1; }
 .wt-gear:hover { color:#fff; background:#2a2a36; }
 
+/* Bypass button (visible when selected) */
+.wt-bypass {
+  position:absolute; left:6px; top:-10px;
+  font-size:10px; font-weight:700; cursor:pointer; opacity:0;
+  transition:opacity .15s; z-index:15; width:20px; height:20px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:50%; background:#1c1c22; border:1px solid #333;
+  color:#999; line-height:1; font-family:monospace;
+}
+.wt-selected .wt-bypass { opacity:1; }
+.wt-bypass:hover { color:#f5b342; border-color:#f5b342; }
+.wt-bypass-on { color:#f5b342 !important; border-color:#f5b342 !important; }
+.wt-bypassed { opacity:.45; filter:grayscale(.6); }
+
+/* Preview toggle button (visible when selected, nodes with thumb only) */
+.wt-prevtoggle {
+  position:absolute; left:28px; top:-10px;
+  font-size:11px; cursor:pointer; opacity:0;
+  transition:opacity .15s; z-index:15; width:20px; height:20px;
+  display:flex; align-items:center; justify-content:center;
+  border-radius:50%; background:#1c1c22; border:1px solid #333;
+  color:#999; line-height:1;
+}
+.wt-selected .wt-prevtoggle { opacity:1; }
+.wt-prevtoggle:hover { color:#fff; background:#2a2a36; }
+
 /* ── Stubs ───────────────────────────────────────────────────── */
 .wt-stub { position:absolute; width:9px; height:9px; border-radius:50%;
   background:#444; border:2px solid #141418; cursor:crosshair; z-index:5;

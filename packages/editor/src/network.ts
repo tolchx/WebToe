@@ -278,10 +278,49 @@ export class NetworkView {
     });
     el.appendChild(gear);
 
+    // Bypass toggle button (visible when selected)
+    const bypassBtn = document.createElement('div');
+    bypassBtn.className = 'wt-bypass';
+    bypassBtn.textContent = 'B';
+    bypassBtn.title = 'Bypass node';
+    bypassBtn.addEventListener('click', (e) => {
+      e.stopPropagation();
+      this.undoable(() => {
+        n.flags.bypass = !n.flags.bypass;
+        bypassBtn.classList.toggle('wt-bypass-on', n.flags.bypass);
+        bypassBtn.textContent = n.flags.bypass ? '⏭' : 'B';
+        el.classList.toggle('wt-bypassed', n.flags.bypass);
+        this.callbacks.onStructureChange();
+      });
+    });
+    if (n.flags.bypass) { bypassBtn.classList.add('wt-bypass-on'); bypassBtn.textContent = '⏭'; el.classList.add('wt-bypassed'); }
+    el.appendChild(bypassBtn);
+
+    // Preview hide toggle (only for nodes with thumbnails)
+    if (el.classList.contains('wt-has-thumb')) {
+      const prevBtn = document.createElement('div');
+      prevBtn.className = 'wt-prevtoggle';
+      prevBtn.textContent = '👁';
+      prevBtn.title = 'Hide preview';
+      prevBtn.addEventListener('click', (e) => {
+        e.stopPropagation();
+        const thumb = el.querySelector('.wt-thumb') as HTMLElement;
+        if (thumb) {
+          const hidden = thumb.style.display === 'none';
+          thumb.style.display = hidden ? '' : 'none';
+          prevBtn.textContent = hidden ? '👁' : '👁‍🗨';
+          prevBtn.title = hidden ? 'Hide preview' : 'Show preview';
+        }
+      });
+      el.appendChild(prevBtn);
+    }
+
     // node interactions
     el.addEventListener('pointerdown', (e) => {
       if ((e.target as HTMLElement).classList.contains('wt-stub') ||
-          (e.target as HTMLElement).classList.contains('wt-gear')) return;
+          (e.target as HTMLElement).classList.contains('wt-gear') ||
+          (e.target as HTMLElement).classList.contains('wt-bypass') ||
+          (e.target as HTMLElement).classList.contains('wt-prevtoggle')) return;
       e.stopPropagation();
       this.select(n);
       this.el.focus();
