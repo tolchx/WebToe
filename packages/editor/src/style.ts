@@ -104,34 +104,24 @@ const CSS = `
   border-radius:50%; background:#1c1c22; border:1px solid #333;
   color:#999; line-height:1;
 }
-.wt-selected .wt-gear { opacity:1; }
-.wt-gear:hover { color:#fff; background:#2a2a36; }
-
-/* Bypass button (visible when selected) */
-.wt-bypass {
-  position:absolute; left:6px; top:-10px;
-  font-size:10px; font-weight:700; cursor:pointer; opacity:0;
-  transition:opacity .15s; z-index:15; width:20px; height:20px;
-  display:flex; align-items:center; justify-content:center;
-  border-radius:50%; background:#1c1c22; border:1px solid #333;
-  color:#999; line-height:1; font-family:monospace;
-}
-.wt-selected .wt-bypass { opacity:1; }
-.wt-bypass:hover { color:#f5b342; border-color:#f5b342; }
-.wt-bypass-on { color:#f5b342 !important; border-color:#f5b342 !important; }
+.wt-selected .wt-gear { opacity:0; pointer-events:none; }
 .wt-bypassed { opacity:.45; filter:grayscale(.6); }
 
-/* Preview toggle button (visible when selected, nodes with thumb only) */
-.wt-prevtoggle {
-  position:absolute; left:28px; top:-10px;
-  font-size:11px; cursor:pointer; opacity:0;
-  transition:opacity .15s; z-index:15; width:20px; height:20px;
-  display:flex; align-items:center; justify-content:center;
-  border-radius:50%; background:#1c1c22; border:1px solid #333;
-  color:#999; line-height:1;
+/* Floating action bar above nodes (long-press) */
+.wt-actbar {
+  position:fixed; z-index:50; display:flex; gap:4px; padding:4px 6px;
+  background:#1c1c22; border:1px solid #333; border-radius:8px;
+  box-shadow:0 4px 20px rgba(0,0,0,.6);
+  transform:translate(-50%,-100%);
 }
-.wt-selected .wt-prevtoggle { opacity:1; }
-.wt-prevtoggle:hover { color:#fff; background:#2a2a36; }
+.wt-actbar button {
+  width:36px; height:36px; border-radius:50%; border:1px solid #333;
+  background:#24242c; color:#aaa; cursor:pointer; font-size:13px;
+  display:flex; align-items:center; justify-content:center;
+  transition:all .1s; touch-action:none;
+}
+.wt-actbar button.wt-act-hover { background:#33334a; border-color:#5a8ec9; color:#fff; transform:scale(1.15); }
+.wt-actbar button:active { background:#44445a; }
 
 /* ── Stubs ───────────────────────────────────────────────────── */
 .wt-stub { position:absolute; width:9px; height:9px; border-radius:50%;

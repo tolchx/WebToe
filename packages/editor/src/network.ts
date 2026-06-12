@@ -391,12 +391,12 @@ export class NetworkView {
 
     this.nodeEls.set(n.id, el);
 
-    // Right-click context menu on node
+    // Right-click context menu on node → also long-press on mobile
     el.addEventListener('contextmenu', (e) => {
       e.preventDefault();
       e.stopPropagation();
       this.select(n);
-      this.showNodeMenu(e.clientX, e.clientY, n, spec);
+      this.showActionBar(e.clientX, e.clientY, n, spec);
     });
 
     return el;
@@ -671,78 +671,122 @@ export class NetworkView {
     document.addEventListener('keydown', dismissKey);
   }
 
-  /** Context menu for a node */
-  private showNodeMenu(x: number, y: number, n: NodeInst, spec: import('@webtoe/core').OpSpec): void {
-    // Close any existing menu
-    document.querySelector('.wt-wiremenu')?.remove();
-    const menu = document.createElement('div');
-    menu.className = 'wt-wiremenu';
-    menu.style.left = `${x}px`;
-    menu.style.top = `${y}px`;
-    menu.dataset.dismiss = '1';
-    const items: { label: string; action: () => void }[] = [
-      { label: 'Parameters (p)', action: () => {
+  /** Floating action bar above a node (appears on long-press) */
+  private showActionBar(x: number, y: number, n: NodeInst, spec: import('@webtoe/core').OpSpec): void {
+    // Remove existing bar
+    document.querySelector('.wt-actbar')?.remove();
+    if (this._actTimer) { clearTimeout(this._actTimer); this._actTimer = null; }
+
+    const bar = document.createElement('div');
+    bar.className = 'wt-actbar';
+    // Position above the node
+    const nodeEl = this.nodeEls.get(n.id);
+    let bx = x, by = y;
+    if (nodeEl) {
+      const r = nodeEl.getBoundingClientRect();
+      bx = r.left + r.width / 2;
+      by = r.top - 8;
+    }
+    bar.style.left = `${bx}px`;
+    bar.style.top = `${by}px`;
+    // Margin-top negative to account for transform translate offset
+    bar.style.marginTop = '-8px';
+
+    const buttons: { icon: string; title: string; action: () => void }[] = [
+      { icon: '⚙', title: 'Parameters', action: () => {
         const ev = new CustomEvent('wt-open-params', { detail: n });
         this.el.dispatchEvent(ev);
       }},
-      { label: 'Display flag (d)', action: () => {
+      { icon: n.flags.display ? '🔆' : '🟡', title: 'Display flag', action: () => {
         this.toggleDisplay(n);
+        // Update icon after toggle
+        nodeEl?.classList.toggle('wt-selected', false);
+        this.select(n);
       }},
-      { label: spec.flags?.bypass ? 'Unbypass (B)' : 'Bypass (B)', action: () => {
+      { icon: n.flags.bypass ? '⏭' : 'B', title: n.flags.bypass ? 'Unbypass' : 'Bypass', action: () => {
         this.undoable(() => {
           n.flags.bypass = !n.flags.bypass;
-          const nodeEl = this.nodeEls.get(n.id);
-          if (nodeEl) {
-            const bypassBtn = nodeEl.querySelector('.wt-bypass') as HTMLElement;
-            if (bypassBtn) {
-              bypassBtn.classList.toggle('wt-bypass-on', n.flags.bypass);
-              bypassBtn.textContent = n.flags.bypass ? '⏭' : 'B';
-            }
-            nodeEl.classList.toggle('wt-bypassed', n.flags.bypass);
-          }
+          nodeEl?.classList.toggle('wt-bypassed', n.flags.bypass);
+          this.callbacks.onStructureChange();
+        });
+        bar.querySelectorAll('button')[2].textContent = n.flags.bypass ? '⏭' : 'B';
+      }},
+      { icon: '👁', title: 'Toggle preview', action: () => {
+        const thumb = nodeEl?.querySelector('.wt-thumb') as HTMLElement;
+        const initLabel = nodeEl?.querySelector('.wt-thumb-init') as HTMLElement;
+        if (thumb && initLabel) {
+          const show = initLabel.style.display !== 'none';
+          initLabel.style.display = show ? 'none' : '';
+          thumb.style.background = show ? '' : '#0e0e12';
+          bar.querySelectorAll('button')[3].textContent = show ? '👁' : '👁‍🗨';
+        }
+      }},
+      { icon: '🗑', title: 'Delete', action: () => {
+        this.undoable(() => {
+          this.engine.gpu?.releaseNode(n);
+          this.engine.graph.delete(n);
+          this.select(null);
+          this.rebuild();
           this.callbacks.onStructureChange();
         });
       }},
     ];
-    if (n.children) {
-      items.push({ label: 'Enter Component (enter)', action: () => {
-        this.setNetwork(n);
-        this.callbacks.onEnterNetwork(n);
-      }});
-    } else {
-      items.push({ label: 'Go Up (u)', action: () => {
-        this.goUp();
-      }});
-    }
-    items.push({ label: 'Delete (Del)', action: () => {
-      this.undoable(() => {
-        this.engine.gpu?.releaseNode(n);
-        this.engine.graph.delete(n);
-        this.select(null);
-        this.rebuild();
-        this.callbacks.onStructureChange();
-      });
-    }});
-    items.forEach((item) => {
+    // Remove 👁 if node has no thumb
+    if (!nodeEl?.classList.contains('wt-has-thumb')) buttons.splice(3, 1);
+
+    const btns: HTMLButtonElement[] = [];
+    buttons.forEach((btnDef) => {
       const btn = document.createElement('button');
-      btn.textContent = item.label;
-      btn.addEventListener('click', () => { menu.remove(); item.action(); });
-      menu.appendChild(btn);
+      btn.textContent = btnDef.icon;
+      btn.title = btnDef.title;
+      bar.appendChild(btn);
+      btns.push(btn);
     });
-    document.body.appendChild(menu);
-    // Dismiss on click outside or Escape
-    const dismiss = (ev: MouseEvent | TouchEvent) => {
-      if (!menu.contains(ev.target as Node)) { menu.remove(); cleanup(); }
+    document.body.appendChild(bar);
+
+    // Track pointer for sliding selection
+    let activeIdx = -1;
+    const updateHover = (cx: number, cy: number) => {
+      let idx = -1;
+      btns.forEach((b, i) => {
+        const r = b.getBoundingClientRect();
+        if (cx >= r.left && cx <= r.right && cy >= r.top && cy <= r.bottom) {
+          idx = i;
+          b.classList.add('wt-act-hover');
+        } else {
+          b.classList.remove('wt-act-hover');
+        }
+      });
+      activeIdx = idx;
     };
-    const dismissKey = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { menu.remove(); cleanup(); } };
+    const finish = () => {
+      bar.remove();
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onFinish);
+      document.removeEventListener('keydown', onKey);
+      // Execute selected action (or first action as default)
+      if (activeIdx >= 0 && activeIdx < buttons.length) {
+        buttons[activeIdx].action();
+      }
+      // Start 10s auto-dismiss for buttons (if bar was visible without selection)
+      this._actTimer = setTimeout(() => {
+        document.querySelector('.wt-actbar')?.remove();
+      }, 10000);
+    };
+    const onMove = (ev: PointerEvent) => updateHover(ev.clientX, ev.clientY);
+    const onFinish = () => finish();
+    const onKey = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { bar.remove(); cleanup(); } };
     const cleanup = () => {
-      document.removeEventListener('mousedown', dismiss);
-      document.removeEventListener('touchstart', dismiss);
-      document.removeEventListener('keydown', dismissKey);
+      document.removeEventListener('pointermove', onMove);
+      document.removeEventListener('pointerup', onFinish);
+      document.removeEventListener('keydown', onKey);
     };
-    document.addEventListener('mousedown', dismiss);
-    document.addEventListener('touchstart', dismiss);
-    document.addEventListener('keydown', dismissKey);
+    // Delay adding global listeners so click on the bar doesn't immediately fire
+    requestAnimationFrame(() => {
+      addEventListener('pointermove', onMove);
+      addEventListener('pointerup', onFinish);
+      addEventListener('keydown', onKey);
+    });
   }
 
   /** Pending parallel insert: when set, the next created node connects in parallel */
@@ -751,6 +795,8 @@ export class NetworkView {
   private _pendingInputInsert: { dstNode: NodeInst; dstIdx: number } | null = null;
   /** Pending output insert: when set, the next created node is wired FROM this output */
   private _pendingOutputInsert: { srcNode: NodeInst } | null = null;
+  /** Action bar auto-dismiss timer */
+  private _actTimer: ReturnType<typeof setTimeout> | null = null;
   /** Long-press active flag for mobile box-select */
   private _longPressActive = false;
   private _longPressTimer: ReturnType<typeof setTimeout> | null = null;
