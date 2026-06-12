@@ -81,7 +81,7 @@ export class NetworkView {
 
     const hint = document.createElement('div');
     hint.className = 'wt-hint';
-    hint.textContent = 'tab/double-click: add op · drag dot→dot: wire · double-click comp: enter · u: up · d: display · ⌫: delete';
+    hint.textContent = 'tab/double-click: add op · drag dot→dot: wire · double-click comp: enter · f: frame · o: overview · u: up · d: display · ⌫: delete';
     el.appendChild(hint);
 
     this.palette = new Palette(el, (type) => this.createAt(type));
@@ -344,6 +344,12 @@ export class NetworkView {
           (e.target as HTMLElement).classList.contains('wt-gear') ||
           (e.target as HTMLElement).classList.contains('wt-bypass') ||
           (e.target as HTMLElement).classList.contains('wt-prevtoggle')) return;
+      // Middle-click → show info popup
+      if (e.button === 1) {
+        e.preventDefault();
+        this.showNodeInfo(e.clientX, e.clientY, n, spec);
+        return;
+      }
       e.stopPropagation();
       this.select(n);
       this.el.focus();
@@ -494,6 +500,60 @@ export class NetworkView {
     this.tf.x = 60;
     this.tf.y = 60;
     this.tf.k = 1;
+    this.applyTransform();
+  }
+
+  /** Frame all nodes to fit the viewport with tight padding */
+  frameAll(): void {
+    const kids = this.engine.graph.childrenOf(this.current);
+    if (!kids.length) return;
+    const r = this.el.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return;
+    const pad = 60;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const n of kids) {
+      const el = this.nodeEls.get(n.id);
+      const w = el?.offsetWidth ?? 124;
+      const h = el?.offsetHeight ?? 44;
+      if (n.pos.x < minX) minX = n.pos.x;
+      if (n.pos.y < minY) minY = n.pos.y;
+      if (n.pos.x + w > maxX) maxX = n.pos.x + w;
+      if (n.pos.y + h > maxY) maxY = n.pos.y + h;
+    }
+    if (minX === Infinity) return;
+    const nw = maxX - minX + pad * 2;
+    const nh = maxY - minY + pad * 2;
+    const k = Math.min(r.width / nw, r.height / nh);
+    this.tf.k = Math.min(4, Math.max(0.08, k));
+    this.tf.x = (r.width - (minX + maxX) * this.tf.k) / 2;
+    this.tf.y = (r.height - (minY + maxY) * this.tf.k) / 2;
+    this.applyTransform();
+  }
+
+  /** Overview: frame all with generous padding for context */
+  overview(): void {
+    const kids = this.engine.graph.childrenOf(this.current);
+    if (!kids.length) return;
+    const r = this.el.getBoundingClientRect();
+    if (r.width <= 0 || r.height <= 0) return;
+    const pad = 150;
+    let minX = Infinity, minY = Infinity, maxX = -Infinity, maxY = -Infinity;
+    for (const n of kids) {
+      const el = this.nodeEls.get(n.id);
+      const w = el?.offsetWidth ?? 124;
+      const h = el?.offsetHeight ?? 44;
+      if (n.pos.x < minX) minX = n.pos.x;
+      if (n.pos.y < minY) minY = n.pos.y;
+      if (n.pos.x + w > maxX) maxX = n.pos.x + w;
+      if (n.pos.y + h > maxY) maxY = n.pos.y + h;
+    }
+    if (minX === Infinity) return;
+    const nw = maxX - minX + pad * 2;
+    const nh = maxY - minY + pad * 2;
+    const k = Math.min(r.width / nw, r.height / nh);
+    this.tf.k = Math.min(4, Math.max(0.08, k));
+    this.tf.x = (r.width - (minX + maxX) * this.tf.k) / 2;
+    this.tf.y = (r.height - (minY + maxY) * this.tf.k) / 2;
     this.applyTransform();
   }
 
@@ -653,6 +713,35 @@ export class NetworkView {
     document.addEventListener('mousedown', dismiss);
     document.addEventListener('touchstart', dismiss);
     document.addEventListener('keydown', dismissKey);
+  }
+
+  /** Floating info popup on middle-click: shows type/family/id/inputs */
+  private showNodeInfo(x: number, y: number, n: NodeInst, spec: import('@webtoe/core').OpSpec): void {
+    document.querySelector('.wt-nodeinfo')?.remove();
+    const popup = document.createElement('div');
+    popup.className = 'wt-nodeinfo';
+    popup.style.left = `${x + 12}px`;
+    popup.style.top = `${y}px`;
+    const inputs = n.inputs.map((src, i) => {
+      const name = src ? src.name : '(none)';
+      return `  [${i}] → ${name}`;
+    }).join('\n');
+    popup.textContent = [
+      `Type: ${spec.label ?? n.type}`,
+      `Family: ${spec.family}`,
+      `ID: ${n.id}`,
+      `Name: ${n.name}`,
+      `Display: ${n.flags.display}`,
+      `Inputs:\n${inputs}`,
+    ].join('\n');
+    document.body.appendChild(popup);
+    // Auto-dismiss after 3s or on any click
+    const dismiss = () => { popup.remove(); cleanup(); };
+    const cleanup = () => {
+      document.removeEventListener('pointerdown', dismiss);
+    };
+    setTimeout(dismiss, 3000);
+    document.addEventListener('pointerdown', dismiss);
   }
 
   /** Floating action bar above a node (appears on long-press) */
@@ -1020,6 +1109,12 @@ export class NetworkView {
         }
       } else if (e.key === 'u') {
         this.goUp();
+      } else if (e.key === 'f') {
+        e.preventDefault();
+        this.frameAll();
+      } else if (e.key === 'o') {
+        e.preventDefault();
+        this.overview();
       } else if (e.key === 'd' && this.selected) {
         this.toggleDisplay(this.selected);
       } else if (e.key === 'p') {

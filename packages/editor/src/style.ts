@@ -58,9 +58,16 @@ const CSS = `
 
 .wt-world { position:absolute; left:0; top:0; transform-origin:0 0; }
 .wt-wires { position:absolute; left:0; top:0; overflow:visible; pointer-events:none; }
-.wt-wires path { fill:none; stroke-width:1.2; opacity:.6; transition:opacity .15s; }
+.wt-wires path { fill:none; stroke-width:1.2; opacity:.7; }
 .wt-wires path:hover { opacity:1; }
 .wt-wires path.wt-preview { stroke-dasharray:4 3; opacity:.8; }
+
+/* Animated wire flow — subtle data-flow effect */
+@keyframes wt-wire-dash { to { stroke-dashoffset: -8; } }
+.wt-wires path:not(.wt-preview) {
+  stroke-dasharray: 3 4;
+  animation: wt-wire-dash 1s linear infinite;
+}
 
 /* ── Nodes ───────────────────────────────────────────────────── */
 .wt-node {
@@ -108,6 +115,13 @@ const CSS = `
 .wt-bypassed { opacity:.45; filter:grayscale(.6); }
 
 /* Floating action bar above nodes (long-press) */
+.wt-nodeinfo {
+  position:fixed; z-index:100; background:#0e0e12; border:1px solid #333;
+  border-radius:6px; padding:8px 12px; min-width:160px;
+  box-shadow:0 4px 16px rgba(0,0,0,.6);
+  font:10px/1.5 ui-monospace,monospace; color:#c8c8d0;
+  white-space:pre; pointer-events:none;
+}
 .wt-actbar {
   position:fixed; z-index:50; display:flex; gap:4px; padding:4px 6px;
   background:#1c1c22; border:1px solid #333; border-radius:8px;
