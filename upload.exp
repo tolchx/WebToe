@@ -1,0 +1,12 @@
+#!/usr/bin/expect -f
+set timeout 60
+set password "UavEmldXCu"
+set src [lindex $argv 0]
+set dst [lindex $argv 1]
+
+spawn scp -P 22 -r $src "dh_awpnn6@iad1-shared-b8-01.dreamhost.com:$dst"
+expect {
+  "password:" { send "$password\r"; exp_continue }
+  "yes/no" { send "yes\r"; exp_continue }
+  eof
+}

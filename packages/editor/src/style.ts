@@ -260,6 +260,11 @@ const CSS = `
 .wt-ftr .wt-timing { color:#666; }
 .wt-ftr .wt-nodecount { color:#666; }
 
+/* ── Dark mode por preferencia del sistema ──────────────────────── */
+@media (prefers-color-scheme: light) {
+  .wt-root, .wt-params, .wt-side, .wt-ftr { color-scheme: dark; }
+}
+
 /* ── RESPONSIVE ─────────────────────────────────────────────────── */
 @media (max-width: 768px) {
   .wt-root {

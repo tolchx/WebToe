@@ -81,6 +81,21 @@ export class Graph {
     if (index >= 0 && index < dst.inputs.length) dst.inputs[index] = null;
   }
 
+  /** Connect a node to another node's parameter via expression.
+   * Like dragging a wire to a parameter in TouchDesigner.
+   * Sets the target param to expr mode with an op("path) reference. */
+  connectExpr(source: NodeInst, target: NodeInst, paramKey: string, channelName?: string): string {
+    if (!this.byId.has(source.id)) {
+      throw new Error(`connectExpr: source node ${source.name || source.id} is not in the graph, cannot create expression`);
+    }
+    const path = this.pathOf(source);
+    const expr = channelName
+      ? "op('" + path + "')['" + channelName + "']"
+      : "op('" + path + "')";
+    target.params.set(paramKey, { mode: 'expr', value: 0, expr });
+    return expr;
+  }
+
   childrenOf(parent: NodeInst): NodeInst[] {
     return parent.children ? [...parent.children.values()] : [];
   }

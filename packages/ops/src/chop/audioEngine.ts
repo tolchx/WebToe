@@ -215,7 +215,7 @@ class AudioEngine {
     const chain = this.chains.get(id);
     if (chain?.source) {
       try {
-        chain.source.stop();
+        if (chain.source && "stop" in chain.source) (chain.source as { stop: () => void }).stop();
       } catch {
         // already stopped
       }
@@ -251,7 +251,7 @@ class AudioEngine {
     if (!ch) return;
     if (ch.source) {
       try {
-        ch.source.stop();
+        if (ch.source && "stop" in ch.source) (ch.source as { stop: () => void }).stop();
       } catch { /* ok */ }
     }
     // disconnect nodes

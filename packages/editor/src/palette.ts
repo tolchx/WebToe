@@ -128,6 +128,22 @@ export class Palette {
     });
     el.addEventListener('pointerdown', (e) => e.stopPropagation());
 
+    // Swipe gesture on the palette to switch family tabs
+    let touchStartX = 0;
+    el.addEventListener('touchstart', (e) => {
+      touchStartX = e.changedTouches[0].clientX;
+    }, { passive: true });
+    el.addEventListener('touchend', (e) => {
+      const deltaX = e.changedTouches[0].clientX - touchStartX;
+      if (Math.abs(deltaX) > 50) {
+        const i = FAMILIES.indexOf(this.family);
+        this.family = FAMILIES[(i + (deltaX < 0 ? 1 : FAMILIES.length - 1)) % FAMILIES.length];
+        this.query = '';
+        input.value = '';
+        render();
+      }
+    }, { passive: true });
+
     render();
     input.focus();
   }

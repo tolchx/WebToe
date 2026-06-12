@@ -110,6 +110,12 @@ export class EditorApp {
     repo.title = 'WebToe on GitHub';
     repo.innerHTML = '<svg viewBox="0 0 16 16" width="18" height="18" aria-hidden="true"><path fill="currentColor" d="M8 0C3.58 0 0 3.58 0 8c0 3.54 2.29 6.53 5.47 7.59.4.07.55-.17.55-.38 0-.19-.01-.82-.01-1.49-2.01.37-2.53-.49-2.69-.94-.09-.23-.48-.94-.82-1.13-.28-.15-.68-.52-.01-.53.63-.01 1.08.58 1.23.82.72 1.21 1.87.87 2.33.66.07-.52.28-.87.51-1.07-1.78-.2-3.64-.89-3.64-3.95 0-.87.31-1.59.82-2.15-.08-.2-.36-1.02.08-2.12 0 0 .67-.21 2.2.82a7.55 7.55 0 0 1 2-.27c.68 0 1.36.09 2 .27 1.53-1.04 2.2-.82 2.2-.82.44 1.1.16 1.92.08 2.12.51.56.82 1.27.82 2.15 0 3.07-1.87 3.75-3.65 3.95.29.25.54.73.54 1.48 0 1.07-.01 1.93-.01 2.2 0 .21.15.46.55.38A8.01 8.01 0 0 0 16 8c0-4.42-3.58-8-8-8z"/></svg>';
 
+    // Video export button
+    const videoBtn = document.createElement('button');
+    videoBtn.textContent = '🎥';
+    videoBtn.title = 'Record 10s video (.webm)';
+    videoBtn.addEventListener('click', () => this.exportVideo());
+
     // MCP Bridge status indicator
     const mcpIndicator = document.createElement('span');
     mcpIndicator.title = 'MCP Bridge: checking...';
@@ -117,7 +123,26 @@ export class EditorApp {
     mcpIndicator.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#555;"></span> MCP';
     this.checkMcpStatus(mcpIndicator);
 
-    bar.append(title, this.projName, newBtn, saveBtn, loadLabel, importLabel, examples, spacer, this.hud, repo, mcpIndicator);
+    bar.append(title, this.projName, newBtn, saveBtn, loadLabel, importLabel, examples, spacer, this.hud, repo, videoBtn, mcpIndicator);
+
+    // Hamburger toggle for mobile (shows/hides toolbar buttons)
+    const hamBtn = document.createElement('button');
+    hamBtn.className = 'wt-hamburger';
+    hamBtn.textContent = '☰';
+    hamBtn.title = 'Toggle toolbar';
+    hamBtn.addEventListener('click', () => {
+      const btns = bar.querySelectorAll('button, select, label');
+      let anyHidden = false;
+      btns.forEach((b) => { if ((b as HTMLElement).style.display === 'none') anyHidden = true; });
+      btns.forEach((b) => {
+        const el = b as HTMLElement;
+        if (el === hamBtn || el.classList.contains('wt-hud') || el.closest('.wt-repo') || el.closest('[class*="mcp"]')) return;
+        el.style.display = anyHidden ? '' : 'none';
+      });
+    });
+    // On mobile, collapse toolbar by default
+    if (window.innerWidth < 768) hamBtn.click();
+    bar.appendChild(hamBtn);
 
     // ---- footer / status bar
     const ftr = document.createElement('div');
@@ -179,6 +204,11 @@ export class EditorApp {
       onStructureChange: () => this.refreshViewerTarget(),
       onEnterNetwork: () => this.refreshViewerTarget(),
       toast: (m) => this.toast(m),
+      onNodeCreated: (node) => {
+        // Auto-zoom to the newly created node
+        const el = net.querySelector(`[data-id="${node.id}"]`) as HTMLElement | null;
+        if (el) el.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+      },
     });
 
     // ---- gpu
@@ -210,15 +240,15 @@ export class EditorApp {
     const zoomIn = document.createElement('button');
     zoomIn.textContent = '+';
     zoomIn.title = 'Zoom in';
-    zoomIn.addEventListener('click', () => this.network?.zoomStep(1));
+    zoomIn.addEventListener('click', () => { navigator.vibrate?.(10); this.network?.zoomStep(1); });
     const zoomOut = document.createElement('button');
     zoomOut.textContent = '−';
     zoomOut.title = 'Zoom out';
-    zoomOut.addEventListener('click', () => this.network?.zoomStep(-1));
+    zoomOut.addEventListener('click', () => { navigator.vibrate?.(10); this.network?.zoomStep(-1); });
     const homeBtn = document.createElement('button');
     homeBtn.innerHTML = '⌂';
     homeBtn.title = 'Reset view';
-    homeBtn.addEventListener('click', () => this.network?.resetView());
+    homeBtn.addEventListener('click', () => { navigator.vibrate?.(10); this.network?.resetView(); });
     mobileNav.append(zoomOut, homeBtn, zoomIn);
     root.appendChild(mobileNav);
 
@@ -453,6 +483,30 @@ export class EditorApp {
     } catch {
       return null; // backend without 3D support (webgpu v1)
     }
+  }
+
+  // ------------------------------------------------------------ video export
+
+  private exportVideo(): void {
+    const canvas = this.compositor;
+    const stream = canvas.captureStream(30);
+    const recorder = new MediaRecorder(stream, { mimeType: 'video/webm' });
+    const chunks: Blob[] = [];
+    recorder.ondataavailable = (e) => {
+      if (e.data.size) chunks.push(e.data);
+    };
+    recorder.onstop = () => {
+      const blob = new Blob(chunks, { type: 'video/webm' });
+      const a = document.createElement('a');
+      a.href = URL.createObjectURL(blob);
+      a.download = `${this.projName.value || 'webtoe'}.webm`;
+      a.click();
+      URL.revokeObjectURL(a.href);
+      this.toast('video exported');
+    };
+    this.toast('recording 10s…');
+    recorder.start();
+    setTimeout(() => recorder.stop(), 10_000);
   }
 
   private loop = (): void => {

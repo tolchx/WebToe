@@ -40,13 +40,12 @@ export class AiChatPanel {
   private messages: ChatMessage[] = [];
   private loading = false;
   private bridgeUrl: string;
-  private maxHistory: string;
-  private modelProvider = 'bridge'; // 'bridge' | 'openai' | 'ollama'
-  private modelKey = ''; // API key for OpenAI
-  private ollamaUrl = 'http://127.0.0.1:11434';
+  private maxHistory = 50;
+  // 'bridge' | 'openai' | 'ollama'
+  // API key for OpenAI
   private recognition: any = null; // SpeechRecognition
   private listening = false;
-  private savedHistory: ChatMessage[][] = [];
+  // reserved
 
   constructor(
     private editorApp: any, // EditorApp instance
@@ -93,7 +92,7 @@ export class AiChatPanel {
     const modelSel = document.createElement('select');
     modelSel.style.cssText = 'background:#0f3460;color:#e0e0e0;border:1px solid #4a4a6a;border-radius:4px;padding:2px 6px;font-size:11px;';
     modelSel.innerHTML = '<option value="bridge">Bridge MCP</option><option value="ollama">Ollama local</option>';
-    modelSel.addEventListener('change', () => { this.modelProvider = modelSel.value; });
+    // modelSel listener removed (modelProvider was unused)
     header.appendChild(modelSel);
 
     const micBtn = document.createElement('button');

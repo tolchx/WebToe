@@ -423,13 +423,13 @@ export const toedirLoader: ProjectLoader = {
       const parmFile = byPath.get(`${dir ? dir + '/' : ''}${name}.parm`);
       if (parmFile) node.parms = parseParmFile(await parmFile.text());
       const textFile = byPath.get(`${dir ? dir + '/' : ''}${name}.text`);
-      if (textFile) node.text = await textFile.text();
+      if (textFile) node.text = (await textFile.text()).trimEnd();
       if (node.text === undefined) {
         // table DATs store their rows in a .table sidecar (text unless baked binary)
         const tableFile = byPath.get(`${dir ? dir + '/' : ''}${name}.table`);
         if (tableFile) {
           const t = await tableFile.text();
-          if (!t.includes('\0')) node.text = t;
+          if (!t.includes('\0')) node.text = t.trimEnd();
         }
       }
       net.set(name, node);

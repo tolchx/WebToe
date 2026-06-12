@@ -6,6 +6,23 @@ const SVG_NS = 'http://www.w3.org/2000/svg';
 
 interface ViewTransform { x: number; y: number; k: number }
 
+/** Snapshot of a single node inside the current network container. */
+interface NodeSnapshot {
+  type: string;
+  name: string;
+  pos: { x: number; y: number };
+  flags: { display: boolean };
+  /** Index → source node name (null = no connection). */
+  inputs: (string | null)[];
+}
+
+/** Snapshot of the current network container's child graph. */
+interface GraphSnapshot {
+  nodes: NodeSnapshot[];
+}
+
+const MAX_UNDO = 20;
+
 /** Network editor: DOM node boxes over an SVG wire layer, pan/zoom world. */
 export class NetworkView {
   current: NodeInst;
@@ -25,6 +42,12 @@ export class NetworkView {
   private pinchDist = 0;
   private pinchTf = { x: 0, y: 0, k: 1 };
 
+  // Undo/redo stacks
+  private undoStack: GraphSnapshot[] = [];
+  private redoStack: GraphSnapshot[] = [];
+  /** True while restoring undo/redo — suppresses further snapshotting. */
+  private restoring = false;
+
   constructor(
     private readonly el: HTMLElement,
     private readonly engine: Engine,
@@ -33,6 +56,8 @@ export class NetworkView {
       onStructureChange(): void;
       onEnterNetwork(comp: NodeInst): void;
       toast(msg: string): void;
+      /** Emitted when a new node is created (→ auto-zoom in EditorApp) */
+      onNodeCreated?(node: NodeInst): void;
     },
   ) {
     this.current = engine.graph.root;
@@ -202,9 +227,11 @@ export class NetworkView {
         e.stopPropagation();
         if (n.inputs[i]) {
           const src = n.inputs[i]!;
-          this.engine.graph.disconnect(n, i);
-          this.callbacks.onStructureChange();
-          this.updateWires();
+          this.undoable(() => {
+            this.engine.graph.disconnect(n, i);
+            this.callbacks.onStructureChange();
+            this.updateWires();
+          });
           this.startWireDrag(src, e);
         }
       });
@@ -262,11 +289,13 @@ export class NetworkView {
   }
 
   private toggleDisplay(n: NodeInst): void {
-    const on = !n.flags.display;
-    for (const sib of this.engine.graph.childrenOf(this.current)) sib.flags.display = false;
-    n.flags.display = on;
-    this.updateBadges();
-    this.callbacks.onStructureChange();
+    this.undoable(() => {
+      const on = !n.flags.display;
+      for (const sib of this.engine.graph.childrenOf(this.current)) sib.flags.display = false;
+      n.flags.display = on;
+      this.updateBadges();
+      this.callbacks.onStructureChange();
+    });
   }
 
   private startWireDrag(src: NodeInst, e: PointerEvent): void {
@@ -294,9 +323,11 @@ export class NetworkView {
       const dst = this.engine.graph.childrenOf(this.current).find((c) => String(c.id) === nodeEl.dataset.id);
       if (!dst) return;
       try {
-        this.engine.graph.connect(src2, dst, Number(stub.dataset.idx));
-        this.callbacks.onStructureChange();
-        this.updateWires();
+        this.undoable(() => {
+          this.engine.graph.connect(src2, dst, Number(stub.dataset.idx));
+          this.callbacks.onStructureChange();
+          this.updateWires();
+        });
       } catch (err) {
         this.callbacks.toast((err as Error).message);
       }
@@ -359,14 +390,116 @@ export class NetworkView {
     this.applyTransform();
   }
 
+  // ------------------------------------------------------------ undo / redo
+
+  /** Snapshot current child state and push onto undo stack (clears redo). */
+  snapshot(): void {
+    if (this.restoring) return;
+    const kids = this.engine.graph.childrenOf(this.current);
+    const nodes: NodeSnapshot[] = kids.map((n) => ({
+      type: n.type,
+      name: n.name,
+      pos: { ...n.pos },
+      flags: { display: n.flags.display },
+      inputs: n.inputs.map((src) => (src && src.parent === this.current ? src.name : null)),
+    }));
+    this.undoStack.push({ nodes });
+    if (this.undoStack.length > MAX_UNDO) this.undoStack.shift();
+    this.redoStack = [];
+  }
+
+  /** Restore the most recent snapshot. */
+  undo(): void {
+    if (!this.undoStack.length) return;
+    const snap = this.undoStack.pop()!;
+    // Snapshot current state onto redo stack before restoring
+    const kids = this.engine.graph.childrenOf(this.current);
+    const redoNodes: NodeSnapshot[] = kids.map((n) => ({
+      type: n.type,
+      name: n.name,
+      pos: { ...n.pos },
+      flags: { display: n.flags.display },
+      inputs: n.inputs.map((src) => (src && src.parent === this.current ? src.name : null)),
+    }));
+    this.redoStack.push({ nodes: redoNodes });
+    this.restoreSnapshot(snap);
+    this.callbacks.onStructureChange();
+    this.callbacks.toast('undo');
+  }
+
+  /** Restore the most recent redo snapshot. */
+  redo(): void {
+    if (!this.redoStack.length) return;
+    const snap = this.redoStack.pop()!;
+    // Snapshot current state onto undo stack
+    const kids = this.engine.graph.childrenOf(this.current);
+    const undNodes: NodeSnapshot[] = kids.map((n) => ({
+      type: n.type,
+      name: n.name,
+      pos: { ...n.pos },
+      flags: { display: n.flags.display },
+      inputs: n.inputs.map((src) => (src && src.parent === this.current ? src.name : null)),
+    }));
+    this.undoStack.push({ nodes: undNodes });
+    this.restoreSnapshot(snap);
+    this.callbacks.onStructureChange();
+    this.callbacks.toast('redo');
+  }
+
+  private restoreSnapshot(snap: GraphSnapshot): void {
+    this.restoring = true;
+    const g = this.engine.graph;
+    // Delete all current children
+    for (const n of g.childrenOf(this.current)) {
+      this.engine.gpu?.releaseNode(n);
+      g.delete(n);
+    }
+    // Recreate nodes from snapshot
+    const nameToNode = new Map<string, NodeInst>();
+    for (const ns of snap.nodes) {
+      const node = g.create(ns.type, this.current, ns.name);
+      node.pos = { ...ns.pos };
+      node.flags.display = ns.flags.display;
+      nameToNode.set(ns.name, node);
+    }
+    // Restore wiring
+    for (const ns of snap.nodes) {
+      const dst = nameToNode.get(ns.name);
+      if (!dst) continue;
+      for (let i = 0; i < ns.inputs.length; i++) {
+        const srcName = ns.inputs[i];
+        if (srcName) {
+          const src = nameToNode.get(srcName);
+          if (src) {
+            try { g.connect(src, dst, i); } catch { /* skip bad wires */ }
+          }
+        }
+      }
+    }
+    this.select(null);
+    this.rebuild();
+    this.restoring = false;
+  }
+
+  /** Wrap a mutation so the current state is snapped before the change. */
+  undoable(fn: () => void): void {
+    this.snapshot();
+    fn();
+  }
+
   private createAt(type: string): void {
     const w = this.toWorld(this.lastPointer.x, this.lastPointer.y);
     try {
-      const n = this.engine.graph.create(type, this.current);
-      n.pos = { x: w.x, y: w.y };
-      this.rebuild();
-      this.select(n);
-      this.callbacks.onStructureChange();
+      let created: NodeInst | undefined;
+      this.undoable(() => {
+        const n = this.engine.graph.create(type, this.current);
+        n.pos = { x: w.x, y: w.y };
+        created = n;
+        this.rebuild();
+        this.select(n);
+        this.callbacks.onStructureChange();
+      });
+      if (created) this.callbacks.onNodeCreated?.(created);
     } catch (err) {
       this.callbacks.toast((err as Error).message);
     }
@@ -394,6 +527,8 @@ export class NetworkView {
       const up = () => {
         removeEventListener('pointermove', move);
         removeEventListener('pointerup', up);
+        // Snap after pan
+        this.snapshot();
       };
       addEventListener('pointermove', move);
       addEventListener('pointerup', up);
@@ -410,7 +545,7 @@ export class NetworkView {
       this.zoomAt(e.clientX, e.clientY, Math.pow(1.0015, -e.deltaY));
     }, { passive: false });
 
-    // Mobile: pinch-to-zoom + prevent double-tap zoom
+    // Mobile: pinch-to-zoom + multi-finger gestures
     el.addEventListener('touchstart', (e) => {
       if (e.touches.length === 2) {
         e.preventDefault();
@@ -418,6 +553,14 @@ export class NetworkView {
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         this.pinchDist = Math.hypot(dx, dy);
         this.pinchTf = { ...this.tf };
+      } else if (e.touches.length === 3) {
+        // 3-finger touch → undo
+        e.preventDefault();
+        this.undo();
+      } else if (e.touches.length === 4) {
+        // 4-finger touch → clear all selection
+        e.preventDefault();
+        this.select(null);
       }
     }, { passive: false });
 
@@ -441,16 +584,22 @@ export class NetworkView {
     el.addEventListener('keydown', (e) => {
       const tag = (e.target as HTMLElement).tagName;
       if (tag === 'INPUT' || tag === 'SELECT' || tag === 'TEXTAREA') return;
-      if (e.key === 'Tab') {
+      if ((e.ctrlKey || e.metaKey) && e.key === 'z') {
+        e.preventDefault();
+        if (e.shiftKey) this.redo();
+        else this.undo();
+      } else if (e.key === 'Tab') {
         e.preventDefault();
         this.palette.open(this.lastPointer.x, this.lastPointer.y);
       } else if (e.key === 'Backspace' || e.key === 'Delete') {
         if (this.selected) {
-          this.engine.gpu?.releaseNode(this.selected);
-          this.engine.graph.delete(this.selected);
-          this.select(null);
-          this.rebuild();
-          this.callbacks.onStructureChange();
+          this.undoable(() => {
+            this.engine.gpu?.releaseNode(this.selected!);
+            this.engine.graph.delete(this.selected!);
+            this.select(null);
+            this.rebuild();
+            this.callbacks.onStructureChange();
+          });
         }
       } else if (e.key === 'u') {
         this.goUp();
@@ -458,6 +607,19 @@ export class NetworkView {
         this.toggleDisplay(this.selected);
       } else if (e.key === 'Escape') {
         this.palette.close();
+      }
+    });
+
+    // devicemotion — violent shake triggers undo
+    window.addEventListener('devicemotion', (e) => {
+      const a = e.accelerationIncludingGravity;
+      if (!a) return;
+      const mag = Math.sqrt(
+        (a.x ?? 0) ** 2 + (a.y ?? 0) ** 2 + (a.z ?? 0) ** 2,
+      );
+      if (mag > 20) {
+        this.callbacks.toast('shake detected — undo');
+        this.undo();
       }
     });
   }

@@ -12,8 +12,8 @@
  * (audiospectrum, audiobandeq) reference a source by node path.
  */
 
-import type { OpSpec, ChannelSet } from '@webtoe/core';
-import { channels, CONTROL_RATE } from './data';
+import type { OpSpec } from '@webtoe/core';
+import { channels } from './data';
 import { audioEngine } from './audioEngine';
 
 const F = 'CHOP' as const;
@@ -63,7 +63,7 @@ const audiofilein: OpSpec = {
   ],
   cook(ctx) {
     const st = ctx.node.state as Record<string, unknown>;
-    const aid = audioId(ctx);
+    const aid = audioId(ctx as { node: { path?: string; uid?: number } });
 
     // On play rising edge → load & start
     const shouldPlay = ctx.paramBool('play');
@@ -127,7 +127,7 @@ const audiodevicein: OpSpec = {
   ],
   cook(ctx) {
     const st = ctx.node.state as Record<string, unknown>;
-    const aid = audioId(ctx);
+    const aid = audioId(ctx as { node: { path?: string; uid?: number } });
     const eng = audioEngine();
     const active = ctx.paramBool('active');
     const wasActive = (st._micActive as boolean) ?? false;
@@ -271,7 +271,7 @@ const audiobandeq: OpSpec = {
     // The engine's createBiquad creates a new chain — for bandeq we want
     // to insert a biquad BETWEEN the existing source and existing analyser.
     // We handle this by using a separate chain id scoped to this node.
-    const bandEqId = `${aid}_beq_${audioId(ctx)}`;
+    const bandEqId = `${aid}_beq_${audioId(ctx as { node: { path?: string; uid?: number } })}`;
     const biquad = eng.createBiquad(bandEqId, type, freq, q);
     if (biquad) {
       biquad.gain.value = gainVal;
