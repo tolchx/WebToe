@@ -75,8 +75,12 @@ const CSS = `
   border-radius:4px 0 0 4px;
 }
 .wt-node .wt-thumb { margin:4px 5px 0 9px; height:48px; background:#101014;
-  border-radius:3px; overflow:hidden; display:none; }
+  border-radius:3px; overflow:hidden; display:none; position:relative; }
 .wt-node.wt-has-thumb .wt-thumb { display:block; }
+.wt-node .wt-thumb-init {
+  position:absolute; inset:0; display:flex; align-items:center; justify-content:center;
+  font:bold 14px ui-monospace,sans-serif; color:#444; letter-spacing:1px;
+}
 .wt-compositor { position:absolute; inset:0; width:100%; height:100%; pointer-events:none; z-index:5; }
 .wt-node .wt-label { padding:4px 7px 0 10px; font-weight:600; color:#e0e0e8;
   white-space:nowrap; overflow:hidden; text-overflow:ellipsis; font-size:11px; }

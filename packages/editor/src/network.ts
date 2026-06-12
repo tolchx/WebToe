@@ -211,6 +211,14 @@ export class NetworkView {
       thumbWrap.className = 'wt-thumb';
       el.appendChild(thumbWrap);
       this.thumbs.set(n.id, thumbWrap); // composited live by the app loop
+      // Initials label overlay (shown when preview is toggled off, like TD desktop)
+      const initLabel = document.createElement('div');
+      initLabel.className = 'wt-thumb-init';
+      const labelText = (spec.label ?? n.type).replace(/^[a-z]+:/, '').slice(0, 2);
+      initLabel.textContent = labelText.toUpperCase();
+      initLabel.title = spec.label ?? n.type;
+      initLabel.style.display = 'none'; // hidden by default
+      thumbWrap.appendChild(initLabel);
     }
 
     const label = document.createElement('div');
@@ -326,11 +334,20 @@ export class NetworkView {
       prevBtn.addEventListener('click', (e) => {
         e.stopPropagation();
         const thumb = el.querySelector('.wt-thumb') as HTMLElement;
+        const initLabel = el.querySelector('.wt-thumb-init') as HTMLElement;
         if (thumb) {
-          const hidden = thumb.style.display === 'none';
-          thumb.style.display = hidden ? '' : 'none';
-          prevBtn.textContent = hidden ? '👁' : '👁‍🗨';
-          prevBtn.title = hidden ? 'Hide preview' : 'Show preview';
+          const showingPreview = initLabel?.style.display === 'none';
+          // Toggle: preview vs initials label (maintains node height)
+          if (initLabel) initLabel.style.display = showingPreview ? '' : 'none';
+          if (showingPreview) {
+            thumb.style.background = '#0e0e12'; // dark bg for initials
+            prevBtn.textContent = '👁‍🗨';
+            prevBtn.title = 'Show preview';
+          } else {
+            thumb.style.background = '';
+            prevBtn.textContent = '👁';
+            prevBtn.title = 'Hide preview';
+          }
         }
       });
       el.appendChild(prevBtn);
