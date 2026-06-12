@@ -545,24 +545,19 @@ export class NetworkView {
       this.zoomAt(e.clientX, e.clientY, Math.pow(1.0015, -e.deltaY));
     }, { passive: false });
 
-    // Mobile: pinch-to-zoom + multi-finger gestures
+    // Mobile: pinch-to-zoom
     el.addEventListener('touchstart', (e) => {
       if (e.touches.length === 2) {
-        e.preventDefault();
         const dx = e.touches[0].clientX - e.touches[1].clientX;
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         this.pinchDist = Math.hypot(dx, dy);
         this.pinchTf = { ...this.tf };
       } else if (e.touches.length === 3) {
-        // 3-finger touch → undo
-        e.preventDefault();
         this.undo();
       } else if (e.touches.length === 4) {
-        // 4-finger touch → clear all selection
-        e.preventDefault();
         this.select(null);
       }
-    }, { passive: false });
+    });
 
     el.addEventListener('touchmove', (e) => {
       if (e.touches.length === 2) {
@@ -570,6 +565,7 @@ export class NetworkView {
         const dx = e.touches[0].clientX - e.touches[1].clientX;
         const dy = e.touches[0].clientY - e.touches[1].clientY;
         const dist = Math.hypot(dx, dy);
+        if (dist < 5) return;
         const r = el.getBoundingClientRect();
         const cx = (e.touches[0].clientX + e.touches[1].clientX) / 2 - r.left;
         const cy = (e.touches[0].clientY + e.touches[1].clientY) / 2 - r.top;

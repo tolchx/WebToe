@@ -45,6 +45,7 @@ const CSS = `
 /* ── Network ─────────────────────────────────────────────────── */
 .wt-net {
   grid-area: net; position: relative; overflow: hidden; outline: none;
+  touch-action: none; /* prevent browser scroll/zoom on touch for smooth drag */
   background:
     radial-gradient(circle at 1px 1px, #22222a 1px, transparent 1px) 0 0 / 20px 20px,
     #141418;
