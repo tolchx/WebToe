@@ -41,6 +41,8 @@ export class NetworkView {
   // Pinch zoom state
   private pinchDist = 0;
   private pinchTf = { x: 0, y: 0, k: 1 };
+  /** Pending wire-insert: when set, the next created node will be inserted between these two */
+  private _pendingWireInsert: { srcNode: NodeInst; dstNode: NodeInst; dstIdx: number } | null = null;
 
   // Undo/redo stacks
   private undoStack: GraphSnapshot[] = [];
@@ -117,6 +119,12 @@ export class NetworkView {
         const srcSpec = getOp(src.type);
         const wireColor = srcSpec ? (FAMILY_COLORS[srcSpec.family] ?? '#666') : '#666';
         p.style.stroke = wireColor;
+        // Store wire metadata for double-click insertion
+        p.dataset.srcId = String(src.id);
+        p.dataset.dstId = String(n.id);
+        p.dataset.dstIdx = String(idx);
+        p.dataset.family = srcSpec?.family ?? '';
+        p.style.cursor = 'pointer';
         this.svg.insertBefore(p, this.preview);
       });
     }
@@ -512,11 +520,24 @@ export class NetworkView {
 
   private createAt(type: string): void {
     const w = this.toWorld(this.lastPointer.x, this.lastPointer.y);
+    const pending = this._pendingWireInsert;
+    this._pendingWireInsert = null;
     try {
       let created: NodeInst | undefined;
       this.undoable(() => {
         const n = this.engine.graph.create(type, this.current);
-        n.pos = { x: w.x, y: w.y };
+        // If inserting into a wire, place the new node mid-way between source and dest
+        if (pending) {
+          const midX = (pending.srcNode.pos.x + pending.dstNode.pos.x) / 2;
+          const midY = (pending.srcNode.pos.y + pending.dstNode.pos.y) / 2;
+          n.pos = { x: midX, y: midY };
+          // Disconnect old wire and reconnect through new node
+          this.engine.graph.disconnect(pending.dstNode, pending.dstIdx);
+          this.engine.graph.connect(pending.srcNode, n, 0);
+          this.engine.graph.connect(n, pending.dstNode, 0);
+        } else {
+          n.pos = { x: w.x, y: w.y };
+        }
         created = n;
         this.rebuild();
         this.select(n);
@@ -558,6 +579,24 @@ export class NetworkView {
     });
 
     el.addEventListener('dblclick', (e) => {
+      // Check if double-clicking on a wire
+      const pathTarget = (e.target as HTMLElement).closest?.('path');
+      if (pathTarget && pathTarget.dataset.family) {
+        const srcId = Number(pathTarget.dataset.srcId);
+        const dstId = Number(pathTarget.dataset.dstId);
+        const dstIdx = Number(pathTarget.dataset.dstIdx);
+        const family = pathTarget.dataset.family;
+        const kids = this.engine.graph.childrenOf(this.current);
+        const srcNode = kids.find(c => c.id === srcId);
+        const dstNode = kids.find(c => c.id === dstId);
+        if (srcNode && dstNode) {
+          // Store pending wire insertion data, will be picked up by createAt override
+          this._pendingWireInsert = { srcNode, dstNode, dstIdx };
+          const r = el.getBoundingClientRect();
+          this.palette.open(e.clientX - r.left, e.clientY - r.top, family);
+          return;
+        }
+      }
       if (e.target !== el && e.target !== this.world && e.target !== this.svg) return;
       const r = el.getBoundingClientRect();
       this.palette.open(e.clientX - r.left, e.clientY - r.top);

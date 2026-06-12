@@ -21,7 +21,7 @@ export class Palette {
     return !!this.el;
   }
 
-  open(x: number, y: number): void {
+  open(x: number, y: number, family?: string): void {
     this.close();
     const el = document.createElement('div');
     el.className = 'wt-palette';
@@ -34,7 +34,7 @@ export class Palette {
     title.className = 'wt-ptitle';
     title.textContent = 'create operator';
     const input = document.createElement('input');
-    input.placeholder = 'search all families…';
+    input.placeholder = family ? `search ${family}…` : 'search all families…';
     input.spellcheck = false;
     head.append(title, input);
     const closeBtn = document.createElement('button');
@@ -69,6 +69,12 @@ export class Palette {
     el.append(head, tabs, grid);
     this.host.appendChild(el);
     this.el = el;
+
+    // If a specific family was requested, set it and render immediately
+    if (family && FAMILIES.includes(family as any)) {
+      this.family = family as Family;
+      this.query = '';
+    }
 
     const render = () => {
       grid.innerHTML = '';
