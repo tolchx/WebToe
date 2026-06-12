@@ -31,6 +31,16 @@ export class ParamPanel {
     const err = document.createElement('span');
     err.className = 'wt-perr';
     head.append(name, typ, err);
+    // Close (X) button for params panel
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.title = 'Close parameters';
+    closeBtn.style.cssText = 'background:none;border:none;color:#555;cursor:pointer;font-size:14px;margin-left:auto;padding:0 2px;line-height:1;';
+    closeBtn.addEventListener('click', () => {
+      this.el.innerHTML = ''; // clear params
+      this.node = null;
+    });
+    head.appendChild(closeBtn);
     this.el.appendChild(head);
     this.headErr = err;
 

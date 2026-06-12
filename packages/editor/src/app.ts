@@ -183,19 +183,22 @@ export class EditorApp {
     splitterEl.className = 'wt-splitter';
     splitterEl.addEventListener('mousedown', (e) => {
       e.preventDefault();
-      const startY = e.clientY;
-      const startH = viewerEl.getBoundingClientRect().height;
+      const startX = e.clientX;
+      const startW = viewerEl.getBoundingClientRect().width;
+      const sideW = side.getBoundingClientRect().width;
       const onMove = (ev: MouseEvent) => {
-        const dh = ev.clientY - startY;
-        const newH = Math.max(60, startH + dh);
-        viewerEl.style.height = newH + 'px';
-        viewerEl.style.flex = 'none';
-        paramsEl.style.flex = '1';
+        const dw = ev.clientX - startX;
+        const ratio = (startW + dw) / sideW;
+        side.style.gridTemplateColumns = `${ratio}fr 4px ${1 - ratio}fr`;
+        side.style.gridTemplateRows = '1fr';
       };
       const onUp = () => { document.removeEventListener('mousemove', onMove); document.removeEventListener('mouseup', onUp); };
       document.addEventListener('mousemove', onMove);
       document.addEventListener('mouseup', onUp);
     });
+    viewerEl.style.gridRow = '1'; viewerEl.style.gridColumn = '1';
+    splitterEl.style.gridRow = '1'; splitterEl.style.gridColumn = '2';
+    paramsEl.style.gridRow = '1'; paramsEl.style.gridColumn = '3';
     side.append(viewerEl, splitterEl, paramsEl);
     root.append(bar, net, side, ftr);
 

@@ -37,6 +37,12 @@ export class Palette {
     input.placeholder = 'search all families…';
     input.spellcheck = false;
     head.append(title, input);
+    const closeBtn = document.createElement('button');
+    closeBtn.textContent = '✕';
+    closeBtn.style.cssText = 'background:none;border:none;color:#555;cursor:pointer;font-size:16px;padding:0 4px;line-height:1;';
+    closeBtn.title = 'Close (Esc)';
+    closeBtn.addEventListener('click', () => this.close());
+    head.appendChild(closeBtn);
 
     const tabs = document.createElement('div');
     tabs.className = 'wt-ptabs';

@@ -93,7 +93,7 @@ const CSS = `
 .wt-gear {
   position:absolute; right:6px; top:-10px;
   font-size:13px; cursor:pointer; opacity:0;
-  transition:opacity .15s; z-index:6; width:20px; height:20px;
+  transition:opacity .15s; z-index:15; width:20px; height:20px;
   display:flex; align-items:center; justify-content:center;
   border-radius:50%; background:#1c1c22; border:1px solid #333;
   color:#999; line-height:1;
@@ -110,12 +110,12 @@ const CSS = `
 .wt-stub.wt-in { left:-5px; }
 
 /* ── Side ────────────────────────────────────────────────────── */
-.wt-side { grid-area:side; display:flex; flex-direction:column;
+.wt-side { grid-area:side; display:grid; grid-template-columns:1fr 4px 1fr;
   min-height:0; border-left:1px solid #2a2a30; background:#18181e; }
 
 /* ── Viewer ──────────────────────────────────────────────────── */
 .wt-viewer { position:relative; background:#0e0e12; border-bottom:1px solid #2a2a30;
-  flex:none; height:200px; }
+  overflow:hidden; min-height:0; }
 .wt-viewer canvas.wt-gl { position:absolute; inset:0; width:100%; height:100%; }
 .wt-viewer canvas.wt-scope { position:absolute; inset:0; width:100%; height:100%; }
 .wt-viewer pre.wt-dattext { position:absolute; inset:0; margin:0; padding:10px;
@@ -125,15 +125,15 @@ const CSS = `
 
 /* Viewer/params splitter */
 .wt-splitter {
-  height:4px; cursor:ns-resize; background:#22222a;
-  border-top:1px solid #2a2a30; border-bottom:1px solid #2a2a30;
+  width:4px; cursor:ew-resize; background:#22222a;
+  border-left:1px solid #2a2a30; border-right:1px solid #2a2a30;
   flex:none; transition:background .1s;
   position:relative; z-index:3;
 }
 .wt-splitter:hover { background:#33333e; }
 .wt-splitter::after {
   content:''; position:absolute; left:50%; top:50%; transform:translate(-50%,-50%);
-  width:24px; height:2px; border-radius:1px; background:#555;
+  height:24px; width:2px; border-radius:1px; background:#555;
 }
 
 /* ── Params ──────────────────────────────────────────────────── */
@@ -293,8 +293,10 @@ const CSS = `
     grid-template-areas: "bar" "side" "net" "ftr";
     touch-action: manipulation; /* prevent browser double-tap zoom */
   }
-  .wt-side { border-left: none; border-bottom: 2px solid #2a2a30; max-height: 45vh; }
-  .wt-viewer { height: 180px; flex: none; position:relative; }
+  .wt-side { border-left: none; border-bottom: 2px solid #2a2a30; max-height: 45vh;
+    grid-template-columns: 1fr; grid-template-rows: auto 4px 1fr; }
+  .wt-side .wt-viewer, .wt-side .wt-splitter, .wt-side .wt-params { grid-row:auto; grid-column:auto; }
+  .wt-viewer { height: 180px; overflow:hidden; border-bottom:none; }
   .wt-params { font-size: 11px; }
   .wt-node { width: 110px; }
   .wt-node .wt-label { font-size: 10px; padding: 3px 6px 0 8px; }
