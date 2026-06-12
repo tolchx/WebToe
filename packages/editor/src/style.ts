@@ -451,7 +451,79 @@ const CSS = `
   .wt-node { width: 94px; }
   .wt-node .wt-label { font-size: 9px; }
   .wt-prow input[type="text"], .wt-prow input[type="number"], .wt-prow select { font-size: 10px; padding: 4px 5px; }
-}`;
+}
+
+/* ── List mode (Shift+T) ───────────────────────────────────────── */
+.wt-list-mode .wt-node {
+  width: auto; min-width: 200px; display: flex; align-items: center; gap: 8px;
+  padding: 2px 10px 2px 6px; cursor: default;
+  border-radius: 3px; border-color: #333;
+}
+.wt-list-mode .wt-node .wt-fam { width: 2px; border-radius: 2px 0 0 2px; position: static; flex: none; align-self: stretch; }
+.wt-list-mode .wt-node .wt-label { padding: 0; font-size: 11px; flex: 1; }
+.wt-list-mode .wt-node .wt-typ { padding: 0; font-size: 9px; color: #666; }
+.wt-list-mode .wt-node .wt-thumb { display: none !important; }
+.wt-list-mode .wt-node .wt-err { display: none !important; }
+.wt-list-mode .wt-node .wt-flag { display: none !important; }
+.wt-list-mode .wt-node .wt-gear { display: none !important; }
+.wt-list-mode .wt-node .wt-bypass { display: none !important; }
+.wt-list-mode .wt-node .wt-prevtoggle { display: none !important; }
+.wt-list-mode .wt-node .wt-resize { display: none !important; }
+.wt-list-mode .wt-node .wt-stub { display: none; }
+.wt-list-mode .wt-node.wt-selected { border-color: #5a8ec9; box-shadow: 0 0 0 1px #5a8ec9; }
+
+/* ── Resize handle ─────────────────────────────────────────────── */
+.wt-resize {
+  position: absolute; right: 0; bottom: 0; width: 12px; height: 12px;
+  cursor: nwse-resize; z-index: 10;
+  background: linear-gradient(135deg, transparent 50%, #555 50%);
+  border-radius: 0 0 3px 0; opacity: 0;
+  transition: opacity .15s;
+}
+.wt-node:hover .wt-resize, .wt-selected .wt-resize { opacity: .7; }
+.wt-resize:hover { opacity: 1 !important; }
+
+/* ── Preferences Panel ─────────────────────────────────────────── */
+.wt-prefs {
+  position: absolute; z-index: 60;
+  background: #1c1c22; border: 1px solid #333;
+  border-radius: 6px; padding: 8px 12px;
+  box-shadow: 0 4px 16px rgba(0,0,0,.5);
+  min-width: 150px;
+  display: flex; flex-direction: column; gap: 6px;
+}
+.wt-prefs-row {
+  display: flex; align-items: center; gap: 6px;
+  color: #ccc; font-size: 11px; cursor: pointer;
+}
+.wt-prefs-row select {
+  background: #22222a; border: 1px solid #333; color: #ccc;
+  border-radius: 3px; padding: 2px 4px; font: inherit; font-size: 11px;
+  cursor: pointer;
+}
+
+/* ── Perform Mode (F1) ──────────────────────────────────────────── */
+.wt-perform .wt-bar,
+.wt-perform .wt-side,
+.wt-perform .wt-ftr,
+.wt-perform .wt-net { display:none !important; }
+.wt-perform .wt-compositor { position:fixed; inset:0; z-index:100; }
+.wt-perform-exit {
+  position:fixed; top:10px; right:10px; z-index:101;
+  background: rgba(20,20,24,0.8); border: 1px solid #3a3a4a;
+  color: #ccc; cursor: pointer; border-radius: 6px;
+  display: flex; align-items: center; justify-content: center;
+  font-size: 16px; width: 32px; height: 32px;
+  opacity: 0.7; transition: opacity .2s;
+}
+.wt-perform-exit:hover { opacity: 1; }
+
+/* ── Compact Node Size ──────────────────────────────────────────── */
+.wt-compact-nodes .wt-node { width: 90px; }
+.wt-compact-nodes .wt-node .wt-label { font-size: 9px; padding: 2px 5px 0 7px; }
+.wt-compact-nodes .wt-node .wt-typ { font-size: 8px; padding: 0 5px 3px 7px; }
+.wt-compact-nodes .wt-node .wt-thumb { height: 30px; }
+`;
 
 let injected = false;
 

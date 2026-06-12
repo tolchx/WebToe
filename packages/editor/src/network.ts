@@ -27,6 +27,8 @@ const MAX_UNDO = 20;
 export class NetworkView {
   current: NodeInst;
   selected: NodeInst | null = null;
+  listMode = false;
+  gridSnap = true;
 
   private readonly world: HTMLDivElement;
   private readonly svg: SVGSVGElement;
@@ -310,6 +312,30 @@ export class NetworkView {
     if (n.flags.bypass) { bypassBtn.classList.add('wt-bypass-on'); bypassBtn.textContent = '⏭'; el.classList.add('wt-bypassed'); }
     el.appendChild(bypassBtn);
 
+    // Resize handle — drag bottom-right corner
+    const resize = document.createElement('div');
+    resize.className = 'wt-resize';
+    resize.title = 'Resize node';
+    resize.addEventListener('pointerdown', (e) => {
+      e.stopPropagation();
+      const startX = e.clientX, startY = e.clientY;
+      const startW = el.offsetWidth, startH = el.offsetHeight;
+      const move = (ev: PointerEvent) => {
+        const dw = (ev.clientX - startX) / this.tf.k;
+        const dh = (ev.clientY - startY) / this.tf.k;
+        el.style.width = `${Math.max(80, startW + dw)}px`;
+        el.style.height = `${Math.max(40, startH + dh)}px`;
+        this.updateWires();
+      };
+      const up = () => {
+        removeEventListener('pointermove', move);
+        removeEventListener('pointerup', up);
+      };
+      addEventListener('pointermove', move);
+      addEventListener('pointerup', up);
+    });
+    el.appendChild(resize);
+
     // Preview hide toggle (only for nodes with thumbnails)
     if (el.classList.contains('wt-has-thumb')) {
       const prevBtn = document.createElement('div');
@@ -343,7 +369,8 @@ export class NetworkView {
       if ((e.target as HTMLElement).classList.contains('wt-stub') ||
           (e.target as HTMLElement).classList.contains('wt-gear') ||
           (e.target as HTMLElement).classList.contains('wt-bypass') ||
-          (e.target as HTMLElement).classList.contains('wt-prevtoggle')) return;
+          (e.target as HTMLElement).classList.contains('wt-prevtoggle') ||
+          (e.target as HTMLElement).classList.contains('wt-resize')) return;
       // Middle-click → show info popup
       if (e.button === 1) {
         e.preventDefault();
@@ -355,8 +382,14 @@ export class NetworkView {
       this.el.focus();
       const start = { x: e.clientX, y: e.clientY, nx: n.pos.x, ny: n.pos.y };
       const move = (ev: PointerEvent) => {
-        n.pos.x = start.nx + (ev.clientX - start.x) / this.tf.k;
-        n.pos.y = start.ny + (ev.clientY - start.y) / this.tf.k;
+        let nx = start.nx + (ev.clientX - start.x) / this.tf.k;
+        let ny = start.ny + (ev.clientY - start.y) / this.tf.k;
+        if (this.gridSnap) {
+          nx = Math.round(nx / 10) * 10;
+          ny = Math.round(ny / 10) * 10;
+        }
+        n.pos.x = nx;
+        n.pos.y = ny;
         el.style.transform = `translate(${n.pos.x}px, ${n.pos.y}px)`;
         this.updateWires();
       };
@@ -1125,6 +1158,13 @@ export class NetworkView {
         }
       } else if (e.key === 'Escape') {
         this.palette.close();
+      } else if (e.key === 'T' && e.shiftKey) {
+        this.listMode = !this.listMode;
+        this.el.classList.toggle('wt-list-mode', this.listMode);
+        this.callbacks.toast(`List mode: ${this.listMode ? 'ON' : 'OFF'}`);
+      } else if (e.key === 'G' && e.shiftKey) {
+        this.gridSnap = !this.gridSnap;
+        this.callbacks.toast(`Grid snap: ${this.gridSnap ? 'ON' : 'OFF'}`);
       }
     });
 

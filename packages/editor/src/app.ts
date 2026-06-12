@@ -39,6 +39,10 @@ export class EditorApp {
   private logEntries: { level: string; msg: string; time: number }[] = [];
   private frameCount = 0;
   private lastFpsTime = 0;
+  private performMode = false;
+  private prefsPanel: HTMLElement | null = null;
+  private prefsState = { gridSnap: false, showFps: true, nodeSize: 'normal' as 'compact' | 'normal' };
+  private performExitBtn!: HTMLButtonElement;
 
   constructor(private readonly host: HTMLElement, private readonly opts: EditorOptions = {}) {}
 
@@ -117,6 +121,18 @@ export class EditorApp {
     videoBtn.title = 'Record 10s video (.webm)';
     videoBtn.addEventListener('click', () => this.exportVideo());
 
+    // Preferences gear button
+    const gearBtn = document.createElement('button');
+    gearBtn.textContent = '⚙';
+    gearBtn.title = 'Preferences';
+    gearBtn.addEventListener('click', () => this.togglePrefs(gearBtn));
+
+    // Pane layout selector
+    const layoutSelect = document.createElement('select');
+    layoutSelect.title = 'Pane layout';
+    layoutSelect.innerHTML = '<option value="default">Default</option><option value="network-only">Network Only</option>';
+    layoutSelect.addEventListener('change', () => this.setLayout(layoutSelect.value));
+
     // MCP Bridge status indicator
     const mcpIndicator = document.createElement('span');
     mcpIndicator.title = 'MCP Bridge: checking...';
@@ -124,7 +140,7 @@ export class EditorApp {
     mcpIndicator.innerHTML = '<span style="display:inline-block;width:8px;height:8px;border-radius:50%;background:#555;"></span> MCP';
     this.checkMcpStatus(mcpIndicator);
 
-    bar.append(title, this.projName, newBtn, saveBtn, loadLabel, importLabel, examples, spacer, this.hud, repo, videoBtn, mcpIndicator);
+    bar.append(title, this.projName, newBtn, saveBtn, loadLabel, importLabel, examples, spacer, this.hud, repo, videoBtn, gearBtn, layoutSelect, mcpIndicator);
 
     // Hamburger toggle for mobile (shows/hides toolbar buttons)
     const hamBtn = document.createElement('button');
@@ -365,6 +381,26 @@ export class EditorApp {
     viewerEl.appendChild(backBtn);
     document.addEventListener('fullscreenchange', () => {
       backBtn.style.display = document.fullscreenElement ? '' : 'none';
+    });
+
+    // Perform mode exit button (shown when wt-perform is active)
+    this.performExitBtn = document.createElement('button');
+    this.performExitBtn.className = 'wt-perform-exit';
+    this.performExitBtn.textContent = '✕';
+    this.performExitBtn.title = 'Exit Perform Mode (F1)';
+    this.performExitBtn.style.display = 'none';
+    this.performExitBtn.addEventListener('click', () => {
+      if (this.performMode) this.togglePerformMode();
+    });
+    root.appendChild(this.performExitBtn);
+
+    // F1 toggle for Perform Mode
+    root.tabIndex = 0;
+    root.addEventListener('keydown', (e) => {
+      if (e.key === 'F1') {
+        e.preventDefault();
+        this.togglePerformMode();
+      }
     });
 
     // AI Chat Panel (Ctrl+Shift+A) — conecta al WebToe MCP Bridge
@@ -677,6 +713,95 @@ export class EditorApp {
       cancelAnimationFrame(rafId);
       recorder.stop();
     }, 10_000);
+  }
+
+  /** Toggle the preferences panel near the gear button */
+  private togglePrefs(anchor: HTMLElement): void {
+    if (this.prefsPanel && this.prefsPanel.parentNode) {
+      this.prefsPanel.remove();
+      this.prefsPanel = null;
+      return;
+    }
+    const panel = document.createElement('div');
+    panel.className = 'wt-prefs';
+
+    // Grid Snap toggle
+    const gridSnapRow = document.createElement('label');
+    gridSnapRow.className = 'wt-prefs-row';
+    const gridSnapChk = document.createElement('input');
+    gridSnapChk.type = 'checkbox';
+    gridSnapChk.checked = this.prefsState.gridSnap;
+    gridSnapChk.addEventListener('change', () => {
+      this.prefsState.gridSnap = gridSnapChk.checked;
+      this.rootEl.dispatchEvent(new CustomEvent('wt-gridsnap', { detail: gridSnapChk.checked }));
+    });
+    gridSnapRow.append(gridSnapChk, ' Grid Snap');
+
+    // Show FPS toggle
+    const fpsRow = document.createElement('label');
+    fpsRow.className = 'wt-prefs-row';
+    const fpsChk = document.createElement('input');
+    fpsChk.type = 'checkbox';
+    fpsChk.checked = this.prefsState.showFps;
+    fpsChk.addEventListener('change', () => {
+      this.prefsState.showFps = fpsChk.checked;
+      this.ftrEls.fpsEl.style.display = fpsChk.checked ? '' : 'none';
+    });
+    fpsRow.append(fpsChk, ' Show FPS');
+
+    // Node Size selector
+    const sizeRow = document.createElement('div');
+    sizeRow.className = 'wt-prefs-row';
+    sizeRow.innerHTML = '<span style="color:#999;margin-right:4px;">Node Size:</span>';
+    const sizeSelect = document.createElement('select');
+    sizeSelect.innerHTML = '<option value="compact">Compact</option><option value="normal">Normal</option>';
+    sizeSelect.value = this.prefsState.nodeSize;
+    sizeSelect.addEventListener('change', () => {
+      this.prefsState.nodeSize = sizeSelect.value as 'compact' | 'normal';
+      this.rootEl.classList.toggle('wt-compact-nodes', sizeSelect.value === 'compact');
+    });
+    sizeRow.appendChild(sizeSelect);
+
+    panel.append(gridSnapRow, fpsRow, sizeRow);
+    this.rootEl.appendChild(panel);
+    this.prefsPanel = panel;
+
+    // Position near the anchor button
+    const rect = anchor.getBoundingClientRect();
+    const rootRect = this.rootEl.getBoundingClientRect();
+    panel.style.top = `${rect.bottom - rootRect.top + 4}px`;
+    panel.style.right = `${rootRect.right - rect.right}px`;
+
+    // Dismiss on click outside
+    const close = (ev: MouseEvent) => {
+      if (!panel.contains(ev.target as Node) && ev.target !== anchor) {
+        panel.remove();
+        this.prefsPanel = null;
+        document.removeEventListener('pointerdown', close);
+      }
+    };
+    setTimeout(() => document.addEventListener('pointerdown', close), 0);
+  }
+
+  /** Toggle Perform Mode (F1): hides all UI except the compositor */
+  private togglePerformMode(): void {
+    this.performMode = !this.performMode;
+    this.rootEl.classList.toggle('wt-perform', this.performMode);
+    this.performExitBtn.style.display = this.performMode ? '' : 'none';
+  }
+
+  /** Change pane layout */
+  private setLayout(layout: string): void {
+    const side = this.rootEl.querySelector('.wt-side') as HTMLElement | null;
+    if (layout === 'network-only') {
+      this.rootEl.style.gridTemplateColumns = '1fr 0px';
+      this.rootEl.style.gridTemplateAreas = '"bar bar" "net net" "ftr ftr"';
+      if (side) side.style.display = 'none';
+    } else {
+      this.rootEl.style.gridTemplateColumns = '';
+      this.rootEl.style.gridTemplateAreas = '';
+      if (side) side.style.display = '';
+    }
   }
 
   private loop = (): void => {
