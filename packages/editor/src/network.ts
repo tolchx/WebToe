@@ -203,6 +203,7 @@ export class NetworkView {
     const fam = document.createElement('div');
     fam.className = 'wt-fam';
     fam.style.background = FAMILY_COLORS[spec.family] ?? '#888';
+    if (spec.inputs.min === 0) fam.classList.add('wt-fam-gen');
     el.appendChild(fam);
 
     if (spec.family === 'TOP' || spec.family === 'SOP' || n.type === 'comp:geo') {
@@ -389,6 +390,15 @@ export class NetworkView {
     });
 
     this.nodeEls.set(n.id, el);
+
+    // Right-click context menu on node
+    el.addEventListener('contextmenu', (e) => {
+      e.preventDefault();
+      e.stopPropagation();
+      this.select(n);
+      this.showNodeMenu(e.clientX, e.clientY, n, spec);
+    });
+
     return el;
   }
 
@@ -661,6 +671,80 @@ export class NetworkView {
     document.addEventListener('keydown', dismissKey);
   }
 
+  /** Context menu for a node */
+  private showNodeMenu(x: number, y: number, n: NodeInst, spec: import('@webtoe/core').OpSpec): void {
+    // Close any existing menu
+    document.querySelector('.wt-wiremenu')?.remove();
+    const menu = document.createElement('div');
+    menu.className = 'wt-wiremenu';
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+    menu.dataset.dismiss = '1';
+    const items: { label: string; action: () => void }[] = [
+      { label: 'Parameters (p)', action: () => {
+        const ev = new CustomEvent('wt-open-params', { detail: n });
+        this.el.dispatchEvent(ev);
+      }},
+      { label: 'Display flag (d)', action: () => {
+        this.toggleDisplay(n);
+      }},
+      { label: spec.flags?.bypass ? 'Unbypass (B)' : 'Bypass (B)', action: () => {
+        this.undoable(() => {
+          n.flags.bypass = !n.flags.bypass;
+          const nodeEl = this.nodeEls.get(n.id);
+          if (nodeEl) {
+            const bypassBtn = nodeEl.querySelector('.wt-bypass') as HTMLElement;
+            if (bypassBtn) {
+              bypassBtn.classList.toggle('wt-bypass-on', n.flags.bypass);
+              bypassBtn.textContent = n.flags.bypass ? '⏭' : 'B';
+            }
+            nodeEl.classList.toggle('wt-bypassed', n.flags.bypass);
+          }
+          this.callbacks.onStructureChange();
+        });
+      }},
+    ];
+    if (n.children) {
+      items.push({ label: 'Enter Component (enter)', action: () => {
+        this.setNetwork(n);
+        this.callbacks.onEnterNetwork(n);
+      }});
+    } else {
+      items.push({ label: 'Go Up (u)', action: () => {
+        this.goUp();
+      }});
+    }
+    items.push({ label: 'Delete (Del)', action: () => {
+      this.undoable(() => {
+        this.engine.gpu?.releaseNode(n);
+        this.engine.graph.delete(n);
+        this.select(null);
+        this.rebuild();
+        this.callbacks.onStructureChange();
+      });
+    }});
+    items.forEach((item) => {
+      const btn = document.createElement('button');
+      btn.textContent = item.label;
+      btn.addEventListener('click', () => { menu.remove(); item.action(); });
+      menu.appendChild(btn);
+    });
+    document.body.appendChild(menu);
+    // Dismiss on click outside or Escape
+    const dismiss = (ev: MouseEvent | TouchEvent) => {
+      if (!menu.contains(ev.target as Node)) { menu.remove(); cleanup(); }
+    };
+    const dismissKey = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { menu.remove(); cleanup(); } };
+    const cleanup = () => {
+      document.removeEventListener('mousedown', dismiss);
+      document.removeEventListener('touchstart', dismiss);
+      document.removeEventListener('keydown', dismissKey);
+    };
+    document.addEventListener('mousedown', dismiss);
+    document.addEventListener('touchstart', dismiss);
+    document.addEventListener('keydown', dismissKey);
+  }
+
   /** Pending parallel insert: when set, the next created node connects in parallel */
   private _pendingParallelInsert: { dstNode: NodeInst; dstIdx: number } | null = null;
   /** Pending input insert: when set, the next created node connects TO this input */
@@ -727,6 +811,52 @@ export class NetworkView {
     });
 
     el.addEventListener('pointerdown', (e) => {
+      // Box-select: Shift+LMB or RMB on empty area
+      if (e.shiftKey || e.button === 2) {
+        e.preventDefault();
+        this.palette.close();
+        el.focus();
+        // Create selection rect
+        const selEl = document.createElement('div');
+        selEl.className = 'wt-selrect';
+        selEl.style.left = `${e.clientX - el.getBoundingClientRect().left}px`;
+        selEl.style.top = `${e.clientY - el.getBoundingClientRect().top}px`;
+        selEl.style.width = '0px';
+        selEl.style.height = '0px';
+        el.appendChild(selEl);
+        const startX = e.clientX;
+        const startY = e.clientY;
+        const move = (ev: PointerEvent) => {
+          const r = el.getBoundingClientRect();
+          const x1 = Math.min(startX, ev.clientX) - r.left;
+          const y1 = Math.min(startY, ev.clientY) - r.top;
+          const x2 = Math.max(startX, ev.clientX) - r.left;
+          const y2 = Math.max(startY, ev.clientY) - r.top;
+          selEl.style.left = `${x1}px`;
+          selEl.style.top = `${y1}px`;
+          selEl.style.width = `${x2 - x1}px`;
+          selEl.style.height = `${y2 - y1}px`;
+        };
+        const up = () => {
+          removeEventListener('pointermove', move);
+          removeEventListener('pointerup', up);
+          const selRect = selEl.getBoundingClientRect();
+          selEl.remove();
+          // Find first node overlapping with selection rect
+          for (const [id, nodeEl] of this.nodeEls) {
+            const nr = nodeEl.getBoundingClientRect();
+            if (nr.left < selRect.right && nr.right > selRect.left &&
+                nr.top < selRect.bottom && nr.bottom > selRect.top) {
+              const n = this.engine.graph.childrenOf(this.current).find(c => c.id === id);
+              if (n) { this.select(n); break; }
+            }
+          }
+        };
+        addEventListener('pointermove', move);
+        addEventListener('pointerup', up);
+        return;
+      }
+
       if (e.target !== el && e.target !== this.world && e.target !== this.svg) return;
       this.palette.close();
       this.select(null);
@@ -746,6 +876,9 @@ export class NetworkView {
       addEventListener('pointermove', move);
       addEventListener('pointerup', up);
     });
+
+    // Prevent default context menu on network element (right-click → box-select)
+    el.addEventListener('contextmenu', (e) => e.preventDefault());
 
     el.addEventListener('dblclick', (e) => {
       // Check if double-clicking on a wire

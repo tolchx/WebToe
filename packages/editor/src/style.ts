@@ -74,7 +74,9 @@ const CSS = `
   position:absolute; left:0; top:0; bottom:0; width:3px;
   border-radius:4px 0 0 4px;
 }
-.wt-node .wt-thumb { margin:4px 5px 0 9px; height:48px; background:#101014;
+.wt-node .wt-fam.wt-fam-gen { filter: brightness(.55); }
+.wt-selrect { position:absolute; border:1px solid #5a8ec9; background:rgba(90,142,201,0.12); z-index:20; pointer-events:none; }
+.wt-node .wt-thumb { margin:4px 5px 0 9px;
   border-radius:3px; overflow:hidden; display:none; position:relative; }
 .wt-node.wt-has-thumb .wt-thumb { display:block; }
 .wt-node .wt-thumb-init {
@@ -292,6 +294,8 @@ const CSS = `
 .wt-palette .wt-pitem span:nth-child(2) { white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
 .wt-palette .wt-pitem .wt-dot { width:6px; height:6px; border-radius:50%; flex:none; }
 .wt-palette .wt-pitem .wt-pfam { margin-left:auto; color:#555; font-size:9px; font-family:ui-monospace,monospace; }
+.wt-palette .wt-pitem .wt-pgenlabel { margin-left:auto; color:#555; font-size:9px; font-family:ui-monospace,monospace; }
+.wt-palette .wt-pitem.wt-pgen { opacity:0.85; }
 .wt-palette .wt-pitem.wt-active, .wt-palette .wt-pitem:hover { background:#22222a; }
 
 /* ── Toast ────────────────────────────────────────────────────── */

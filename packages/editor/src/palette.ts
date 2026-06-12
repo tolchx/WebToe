@@ -93,12 +93,17 @@ export class Palette {
       for (const spec of specs) {
         const item = document.createElement('div');
         item.className = 'wt-pitem';
+        if (spec.inputs.min === 0) item.classList.add('wt-pgen');
+        else item.classList.add('wt-pfil');
         const dot = document.createElement('span');
         dot.className = 'wt-dot';
         dot.style.background = FAMILY_COLORS[spec.family] ?? '#888';
         const name = document.createElement('span');
         name.textContent = spec.label ?? spec.type;
-        item.append(dot, name);
+        const genLabel = document.createElement('span');
+        genLabel.className = 'wt-pgenlabel';
+        genLabel.textContent = spec.inputs.min === 0 ? '(gen)' : '(fil)';
+        item.append(dot, name, genLabel);
         if (q) {
           const fam = document.createElement('span');
           fam.className = 'wt-pfam';
