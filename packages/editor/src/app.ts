@@ -175,7 +175,23 @@ export class EditorApp {
       this.network?.palette?.open(r.left + r.width / 2, r.top + r.height / 2);
     });
 
-    ftr.append(fpsEl, timingEl, nodeCountEl, spacer2, addOpBtn, errsEl);
+    // Undo/Redo arrow buttons in footer
+    const undoBtn = document.createElement('button');
+    undoBtn.className = 'wt-addop';
+    undoBtn.textContent = '↩';
+    undoBtn.title = 'Undo (Ctrl+Z)';
+    undoBtn.addEventListener('click', () => this.network?.undo());
+    const redoBtn = document.createElement('button');
+    redoBtn.className = 'wt-addop';
+    redoBtn.textContent = '↪';
+    redoBtn.title = 'Redo (Ctrl+Shift+Z)';
+    redoBtn.addEventListener('click', () => this.network?.redo());
+
+    const undoGroup = document.createElement('span');
+    undoGroup.style.cssText = 'display:flex;gap:2px;';
+    undoGroup.append(undoBtn, redoBtn);
+
+    ftr.append(fpsEl, timingEl, nodeCountEl, spacer2, undoGroup, addOpBtn, errsEl);
     this.ftrEls = { fpsEl, timingEl, nodeCountEl, errsEl };
 
     // ---- panels
