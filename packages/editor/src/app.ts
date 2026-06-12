@@ -303,7 +303,31 @@ export class EditorApp {
     fsBtn.textContent = '⛶';
     fsBtn.title = 'Fullscreen preview';
     fsBtn.addEventListener('click', () => {
-      if (viewerEl.requestFullscreen) viewerEl.requestFullscreen();
+      if (viewerEl.requestFullscreen) {
+        // Move the compositor canvas inside the viewer so it renders in fullscreen
+        const compositor = this.compositor;
+        const prevParent = compositor.parentNode;
+        viewerEl.appendChild(compositor);
+        compositor.style.position = 'fixed';
+        compositor.style.inset = '0';
+        compositor.style.width = '100vw';
+        compositor.style.height = '100vh';
+        viewerEl.requestFullscreen();
+        // Move compositor back when exiting fullscreen
+        const onExit = () => {
+          if (!document.fullscreenElement) {
+            document.removeEventListener('fullscreenchange', onExit);
+            if (prevParent) {
+              prevParent.appendChild(compositor);
+              compositor.style.position = 'absolute';
+              compositor.style.inset = '0';
+              compositor.style.width = '100%';
+              compositor.style.height = '100%';
+            }
+          }
+        };
+        document.addEventListener('fullscreenchange', onExit);
+      }
     });
     viewerEl.appendChild(fsBtn);
 
