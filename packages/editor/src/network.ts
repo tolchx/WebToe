@@ -125,6 +125,11 @@ export class NetworkView {
         p.dataset.dstIdx = String(idx);
         p.dataset.family = srcSpec?.family ?? '';
         p.style.cursor = 'pointer';
+        // Context menu: right-click / long-press on wire
+        p.addEventListener('contextmenu', (e) => {
+          e.preventDefault();
+          this.showWireMenu(e.clientX, e.clientY, p);
+        });
         this.svg.insertBefore(p, this.preview);
       });
     }
@@ -518,10 +523,76 @@ export class NetworkView {
     fn();
   }
 
+  /** Context menu for a wire: insert series, parallel, or delete */
+  private showWireMenu(x: number, y: number, path: SVGPathElement): void {
+    // Close any existing menu
+    document.querySelector('.wt-wiremenu')?.remove();
+    const menu = document.createElement('div');
+    menu.className = 'wt-wiremenu';
+    menu.style.left = `${x}px`;
+    menu.style.top = `${y}px`;
+    menu.dataset.dismiss = '1';
+    const items = [
+      { label: '➕ Insert node (series)', action: () => {
+        const family = path.dataset.family || 'TOP';
+        const r = this.el.getBoundingClientRect();
+        this._pendingWireInsert = {
+          srcNode: this.engine.graph.childrenOf(this.current).find(c => String(c.id) === path.dataset.srcId)!,
+          dstNode: this.engine.graph.childrenOf(this.current).find(c => String(c.id) === path.dataset.dstId)!,
+          dstIdx: Number(path.dataset.dstIdx),
+        };
+        this.palette.open(x - r.left, y - r.top, family);
+      }},
+      { label: '🔀 Add node (parallel)', action: () => {
+        const dst = this.engine.graph.childrenOf(this.current).find(c => String(c.id) === path.dataset.dstId);
+        if (!dst) return;
+        const r = this.el.getBoundingClientRect();
+        // For parallel: keep the original connection and add another input to the same dest
+        this._pendingWireInsert = null; // not used for parallel
+        this._pendingParallelInsert = { dstNode: dst, dstIdx: Number(path.dataset.dstIdx) };
+        this.palette.open(x - r.left, y - r.top, path.dataset.family || 'TOP');
+      }},
+      { label: '🗑️ Delete wire', action: () => {
+        const dst = this.engine.graph.childrenOf(this.current).find(c => String(c.id) === path.dataset.dstId);
+        if (!dst) return;
+        this.undoable(() => {
+          this.engine.graph.disconnect(dst, Number(path.dataset.dstIdx));
+          this.callbacks.onStructureChange();
+          this.updateWires();
+        });
+      }},
+    ];
+    items.forEach((item) => {
+      const btn = document.createElement('button');
+      btn.textContent = item.label;
+      btn.addEventListener('click', () => { menu.remove(); item.action(); });
+      menu.appendChild(btn);
+    });
+    document.body.appendChild(menu);
+    // Dismiss on click outside
+    const dismiss = (ev: MouseEvent | TouchEvent) => {
+      if (!menu.contains(ev.target as Node)) { menu.remove(); cleanup(); }
+    };
+    const dismissKey = (ev: KeyboardEvent) => { if (ev.key === 'Escape') { menu.remove(); cleanup(); } };
+    const cleanup = () => {
+      document.removeEventListener('mousedown', dismiss);
+      document.removeEventListener('touchstart', dismiss);
+      document.removeEventListener('keydown', dismissKey);
+    };
+    document.addEventListener('mousedown', dismiss);
+    document.addEventListener('touchstart', dismiss);
+    document.addEventListener('keydown', dismissKey);
+  }
+
+  /** Pending parallel insert: when set, the next created node connects in parallel */
+  private _pendingParallelInsert: { dstNode: NodeInst; dstIdx: number } | null = null;
+
   private createAt(type: string): void {
     const w = this.toWorld(this.lastPointer.x, this.lastPointer.y);
     const pending = this._pendingWireInsert;
     this._pendingWireInsert = null;
+    const parallel = this._pendingParallelInsert;
+    this._pendingParallelInsert = null;
     try {
       let created: NodeInst | undefined;
       this.undoable(() => {
@@ -535,6 +606,11 @@ export class NetworkView {
           this.engine.graph.disconnect(pending.dstNode, pending.dstIdx);
           this.engine.graph.connect(pending.srcNode, n, 0);
           this.engine.graph.connect(n, pending.dstNode, 0);
+        } else if (parallel) {
+          // Place parallel node slightly below the original connection point
+          const dstNode = parallel.dstNode;
+          n.pos = { x: dstNode.pos.x - 160, y: dstNode.pos.y + 80 };
+          this.engine.graph.connect(n, dstNode, 0);
         } else {
           n.pos = { x: w.x, y: w.y };
         }

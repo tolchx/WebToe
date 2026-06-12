@@ -269,6 +269,19 @@ const CSS = `
   background:#1c1c22; border:1px solid #333; color:#ccc; padding:6px 14px;
   border-radius:4px; z-index:60; font-size:11px; max-width:70%; }
 
+/* Wire context menu */
+.wt-wiremenu {
+  position:fixed; z-index:100; background:#1c1c22; border:1px solid #333;
+  border-radius:6px; padding:4px 0; min-width:160px;
+  box-shadow:0 4px 16px rgba(0,0,0,.5);
+}
+.wt-wiremenu button {
+  display:block; width:100%; background:none; border:none; color:#ccc;
+  padding:7px 14px; font:12px -apple-system,sans-serif; text-align:left;
+  cursor:pointer; transition:background .1s;
+}
+.wt-wiremenu button:hover { background:#2a2a36; }
+
 /* ── Status bar (footer) ─────────────────────────────────────── */
 .wt-ftr {
   grid-area:ftr; display:flex; align-items:center; gap:12px;
