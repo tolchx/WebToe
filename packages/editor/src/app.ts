@@ -104,7 +104,7 @@ export class EditorApp {
     this.hud.className = 'wt-hud';
     const repo = document.createElement('a');
     repo.className = 'wt-repo';
-    repo.href = this.opts.repoUrl ?? 'https://github.com/frank890417/WebToe';
+    repo.href = this.opts.repoUrl ?? 'https://github.com/tolchx/WebToe';
     repo.target = '_blank';
     repo.rel = 'noopener';
     repo.title = 'WebToe on GitHub';
