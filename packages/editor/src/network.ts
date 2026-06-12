@@ -330,15 +330,24 @@ export class NetworkView {
       this.preview?.removeAttribute('d');
       const src2 = this.dragWireSrc;
       this.dragWireSrc = null;
-      const target = document.elementFromPoint(ev.clientX, ev.clientY) as HTMLElement | null;
-      const stub = target?.closest?.('.wt-stub.wt-in') as HTMLElement | null;
-      if (!src2 || !stub) return;
-      const nodeEl = stub.closest('.wt-node') as HTMLElement;
+      if (!src2) return;
+      // Find the nearest input stub (more reliable than elementFromPoint)
+      const allStubs = this.el.querySelectorAll('.wt-stub.wt-in') as NodeListOf<HTMLElement>;
+      let bestStub: HTMLElement | null = null;
+      let bestDist = 30; // snap threshold in CSS pixels
+      allStubs.forEach((s) => {
+        const r = s.getBoundingClientRect();
+        const cx = r.left + r.width / 2, cy = r.top + r.height / 2;
+        const d = Math.hypot(ev.clientX - cx, ev.clientY - cy);
+        if (d < bestDist) { bestDist = d; bestStub = s; }
+      });
+      if (!bestStub) return;
+      const nodeEl = bestStub.closest('.wt-node') as HTMLElement;
       const dst = this.engine.graph.childrenOf(this.current).find((c) => String(c.id) === nodeEl.dataset.id);
       if (!dst) return;
       try {
         this.undoable(() => {
-          this.engine.graph.connect(src2, dst, Number(stub.dataset.idx));
+          this.engine.graph.connect(src2, dst, Number(bestStub!.dataset.idx));
           this.callbacks.onStructureChange();
           this.updateWires();
         });
