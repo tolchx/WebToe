@@ -419,6 +419,29 @@ export class NetworkView {
 
     this.nodeEls.set(n.id, el);
 
+    // Drag-and-drop file import for file-based operators
+    const hasFileParam = spec.params?.some((p: any) => p.key === 'file');
+    if (hasFileParam) {
+      el.classList.add('wt-dropzone');
+      el.addEventListener('dragover', (e) => { e.preventDefault(); el.classList.add('wt-dragover'); });
+      el.addEventListener('dragleave', () => el.classList.remove('wt-dragover'));
+      el.addEventListener('drop', (e) => {
+        e.preventDefault();
+        e.stopPropagation();
+        el.classList.remove('wt-dragover');
+        const file = e.dataTransfer?.files?.[0];
+        if (!file) return;
+        const reader = new FileReader();
+        reader.onload = () => {
+          n.params.set('file', reader.result as string);
+          n.cookedFrame = -1;
+          this.callbacks.onStructureChange();
+          this.callbacks.toast(`dropped: ${file.name}`);
+        };
+        reader.readAsDataURL(file);
+      });
+    }
+
     // Right-click context menu on node → also long-press on mobile
     el.addEventListener('contextmenu', (e) => {
       e.preventDefault();
@@ -810,7 +833,6 @@ export class NetworkView {
       }},
       { icon: n.flags.display ? '🔆' : '🟡', title: 'Display flag', action: () => {
         this.toggleDisplay(n);
-        // Update icon after toggle
         nodeEl?.classList.toggle('wt-selected', false);
         this.select(n);
       }},
@@ -844,6 +866,38 @@ export class NetworkView {
     ];
     // Remove 👁 if node has no thumb
     if (!nodeEl?.classList.contains('wt-has-thumb')) buttons.splice(3, 1);
+
+    // Add 📁 Load file button for file-based operators (imagein, videoin, audiofilein, etc.)
+    const hasFileParam = spec.params?.some((p: any) => p.key === 'file');
+    if (hasFileParam) {
+      buttons.splice(3, 0, { icon: '📁', title: 'Load file from device', action: () => {
+        const input = document.createElement('input');
+        input.type = 'file';
+        input.accept = spec.type.includes('image') ? 'image/*'
+          : spec.type.includes('video') ? 'video/*'
+          : spec.type.includes('audio') ? 'audio/*'
+          : '*/*';
+        input.addEventListener('change', () => {
+          const file = input.files?.[0];
+          if (!file) return;
+          const reader = new FileReader();
+          reader.onload = () => {
+            const dataUrl = reader.result as string;
+            // Set the node's 'file' param
+            const fileParam = spec.params?.find((p: any) => p.key === 'file');
+            if (fileParam) {
+              n.params.set('file', dataUrl);
+              // Force recook
+              n.cookedFrame = -1;
+              this.callbacks.onStructureChange();
+              this.callbacks.toast(`loaded: ${file.name}`);
+            }
+          };
+          reader.readAsDataURL(file);
+        });
+        input.click();
+      }});
+    }
 
     const btns: HTMLButtonElement[] = [];
     buttons.forEach((btnDef) => {

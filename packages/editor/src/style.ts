@@ -137,6 +137,9 @@ const CSS = `
 .wt-actbar button.wt-act-hover { background:#33334a; border-color:#5a8ec9; color:#fff; transform:scale(1.15); }
 .wt-actbar button:active { background:#44445a; }
 
+/* File dropzone for nodes */
+.wt-dropzone.wt-dragover { outline: 2px dashed #5a8ec9; outline-offset: 2px; }
+
 /* ── Stubs ───────────────────────────────────────────────────── */
 .wt-stub { position:absolute; width:9px; height:9px; border-radius:50%;
   background:#444; border:2px solid #141418; cursor:crosshair; z-index:5;
