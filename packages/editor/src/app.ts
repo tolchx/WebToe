@@ -254,7 +254,7 @@ export class EditorApp {
     homeBtn.title = 'Reset view';
     homeBtn.addEventListener('click', () => { navigator.vibrate?.(10); this.network?.resetView(); });
     mobileNav.append(zoomOut, homeBtn, zoomIn);
-    root.appendChild(mobileNav);
+    net.appendChild(mobileNav); // append to net, not root, so bottom aligns with network area
 
     // Fullscreen toggle for viewer
     const fsBtn = document.createElement('button');
