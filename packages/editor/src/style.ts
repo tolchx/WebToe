@@ -123,6 +123,15 @@ const CSS = `
 .wt-viewer .wt-viewname { position:absolute; left:8px; bottom:6px; color:#666;
   font:10px ui-monospace,monospace; pointer-events:none; }
 
+/* Aspect ratio selector */
+.wt-ratio {
+  position:absolute; right:8px; bottom:4px; z-index:12;
+  background:rgba(20,20,24,0.8); border:1px solid #333; color:#999;
+  border-radius:3px; padding:0 4px; font:9px ui-monospace,monospace; cursor:pointer;
+  opacity:0.6; transition:opacity .15s; max-width:50px;
+}
+.wt-ratio:hover { opacity:1; color:#ddd; }
+
 /* Viewer/params splitter */
 .wt-splitter {
   width:4px; cursor:ew-resize; background:#22222a;

@@ -18,7 +18,27 @@ export class Viewer {
     this.datPre.className = 'wt-dattext';
     this.nameTag = document.createElement('div');
     this.nameTag.className = 'wt-viewname';
-    el.append(this.scope, this.datPre, this.nameTag);
+
+    // Aspect ratio selector
+    const ratioSel = document.createElement('select');
+    ratioSel.className = 'wt-ratio';
+    const ratios = ['16:9', '16:10', '4:3', '1:1', '9:16', '3:4', 'Free'];
+    const savedRatio = localStorage.getItem('wt_viewer_ratio') || '16:9';
+    ratios.forEach(r => {
+      const o = document.createElement('option');
+      o.value = r; o.textContent = r;
+      if (r === savedRatio) o.selected = true;
+      ratioSel.appendChild(o);
+    });
+    ratioSel.addEventListener('change', () => {
+      const v = ratioSel.value;
+      localStorage.setItem('wt_viewer_ratio', v);
+      this.applyRatio(v);
+    });
+    // Apply initial ratio after a short delay (when parent is laid out)
+    setTimeout(() => this.applyRatio(savedRatio), 50);
+
+    el.append(this.scope, this.datPre, this.nameTag, ratioSel);
 
     const updateMouse = (e: PointerEvent, down?: boolean) => {
       const r = el.getBoundingClientRect();
@@ -30,6 +50,24 @@ export class Viewer {
     el.addEventListener('pointerdown', (e) => updateMouse(e, true));
     el.addEventListener('pointerup', (e) => updateMouse(e, false));
     el.addEventListener('pointerleave', () => { this.engine.io.mouse.down = false; });
+  }
+
+  /** Apply aspect ratio to the viewer element */
+  private applyRatio(ratio: string): void {
+    if (ratio === 'Free') {
+      this.el.style.aspectRatio = '';
+      this.el.style.height = '';
+      this.el.style.flex = '1';
+    } else {
+      const [w, h] = ratio.split(':').map(Number);
+      const cssRatio = `${w}/${h}`;
+      // Letterbox: reserve space via aspect-ratio, fill with the scope
+      this.el.style.aspectRatio = cssRatio;
+      this.el.style.flex = 'none';
+      this.el.style.width = '';  // let grid column control width
+      this.el.style.height = ''; // let aspect-ratio handle height
+    }
+    this.fit();
   }
 
   fit(): void {
