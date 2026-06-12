@@ -5,7 +5,7 @@ remote_base = "/home/dh_awpnn6/tolchx.com/webtoe"
 
 ssh = paramiko.SSHClient()
 ssh.set_missing_host_key_policy(paramiko.AutoAddPolicy())
-ssh.connect("iad1-shared-b8-01.dreamhost.com", username="dh_awpnn6", password="[REDACTED]")
+ssh.connect("iad1-shared-b8-01.dreamhost.com", username="dh_awpnn6", password=os.environ.get("DH_PASS", ""))
 sftp = ssh.open_sftp()
 
 n = 0

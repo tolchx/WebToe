@@ -103,6 +103,14 @@ Append-only build log. Protocol: every work chunk gets an entry — timestamp, w
 - **Importer/fixture**: ~40 new TYPE_MAP entries + token-accurate PARAM_MAPs; fixture v3 regenerated through real toecollapse/toeexpand with a 3D branch (geo/SOP-chain/MAT/cam/light/render, canonical parm modes) — 23 nodes, CI-covered.
 - **Measured**: corpus **47.1% → 62.3%**; DNA sketch 55→71%, Fire Dance 65→74%. Example 10 (ribbons + noise-scattered instanced spheres + orbit cam + glow post) renders at full rate, zero errors. 60/60 tests.
 
+## 2026-06-12 — R4 TOP:glsl complete (shim + WebGPU + importer + tests)
+
+- **Shim wrapGlslTop mejorado**: sTDNoiseMap → función procedural `tdNoise()` (sin textura), sTDSineLookup → `sin(x*2π)*0.5+0.5`, uTDOutputInfo.res → `u_TDOutputInfoRes` uniform, sTD3DInputs/sTDCubeInputs declarados como stubs con warning. Detección de índices dinámicos (`sTD2DInputs[var]`) vía `GlslTopWrapResult.hasDynamicIndex`.
+- **WebGPU backend agregado**: `top:glsl` ahora declara `backends: ['webgl2', 'webgpu']`. GLSL→WGSL no es automático aún — usuarios WebGPU escriben WGSL directo. GLSL-only en WebGPU muestra stub con mensaje.
+- **Importer**: `TOP:glsl → top:glsl` en TYPE_MAP, `glsl1` param en PARAM_MAP, `.text` sidecar → `source` param automático.
+- **Tests**: 13 tests nuevos (`glsl-shim.test.ts`) — rewrites sTD2DInputs/uTD2DInfos/uTDOutputInfo, detección dinámica (pos/neg), 3D inputs, noise/sine preamble, realistic TD snippet. Suite total: 105/105 ✅.
+- **Producción**: build + upload a tolchx.com/webtoe/ (24 files, 242 KB JS).
+
 ## NEXT
 
 Backlog (v2 — full detail and measured targets in docs/ROADMAP.md, full parity map in docs/TD-PARITY.md):
