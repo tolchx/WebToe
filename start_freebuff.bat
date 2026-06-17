@@ -3,12 +3,12 @@ TITLE FreeBuff Workspace
 echo Verificando directorio de trabajo...
 
 :: Crear el directorio si no existe
-if not exist "C:\Users\Tolch\Documents\AI_Code\WebToe" (
-    mkdir "C:\Users\Tolch\Documents\AI_Code\WebToe"
+if not exist "%~dp0" (
+    mkdir "%~dp0"
 )
 
 :: Cambiar al directorio
-cd /d "C:\Users\Tolch\Documents\AI_Code\WebToe"
+cd /d "%~dp0"
 
 echo Iniciando FreeBuff en %CD%...
 echo ===================================================

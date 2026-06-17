@@ -1,7 +1,7 @@
 # WebToe Import Report: Toe_Expand Project Conversion
 
-Source: C:/Users/Tolch/Documents/AI_Code/Touchdesigner_MCP/old/mcp_td_v3/Toe_Expand/Toe_Expand
-Destination: C:/Users/Tolch/Documents/AI_Code/WebToe/apps/web/public/examples
+Source: [Touchdesigner_MCP]/old/mcp_td_v3/Toe_Expand/Toe_Expand
+Destination: [WebToe]/apps/web/public/examples
 
 ## Imported Projects
 

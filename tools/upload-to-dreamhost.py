@@ -1,6 +1,7 @@
-import paramiko, os
-
-dist = r"C:\Users\Tolch\Documents\AI_Code\WebToe\apps\web\dist"
+import paramiko
+import os
+BASE_DIR = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+dist = os.path.join(BASE_DIR, "apps", "web", "dist")
 remote_base = "/home/dh_awpnn6/tolchx.com/webtoe"
 
 ssh = paramiko.SSHClient()

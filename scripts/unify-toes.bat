@@ -1,8 +1,8 @@
 @echo off
 setlocal enabledelayedexpansion
 
-set SRC=C:\Users\Tolch\Documents\AI_Code\Touchdesigner_MCP\Main\old\mcp_td_v3\Toe_Expand
-set DST=C:\Users\Tolch\Documents\AI_Code\WebToe\toes\Touchdesigner
+set SRC=%~dp0..\..\Touchdesigner_MCP\Main\old\mcp_td_v3\Toe_Expand
+set DST=%~dp0..\toes\Touchdesigner
 
 echo =========================================
 echo Unificando Toe_Expand → toes/Touchdesigner
